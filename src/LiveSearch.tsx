@@ -85,7 +85,7 @@ function ResultCard({ r, place, onOpenCall }: { r: Business; place: string; onOp
           aria-haspopup="dialog"
           onClick={() => onOpenCall(r)}
         >
-          View call info
+          View call details
         </LiquidGlass>
         <LiquidGlass as="button" type="button" className="live-action live-icon" radius={17} {...glass} aria-label={`Call ${CALL_NUMBER}`} title={`Call ${CALL_NUMBER}`} onClick={call}>
           <PhoneIcon />
