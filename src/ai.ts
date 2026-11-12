@@ -1,3 +1,4 @@
+import { api } from './api'
 import type { Message, SearchResult } from './chat'
 
 /** Mirrors META_MARK in server/chat.ts. */
@@ -69,7 +70,7 @@ export async function streamReply(
   signal: AbortSignal,
   onText: (text: string) => void,
 ): Promise<{ text: string; meta: ReplyMeta }> {
-  const response = await fetch('/api/chat', {
+  const response = await fetch(api('/api/chat'), {
     method: 'POST',
     headers: { 'content-type': 'application/json' },
     body: JSON.stringify({ messages: toTurns(history), place }),
@@ -106,7 +107,7 @@ export async function streamReply(
 
 /** Run the (simulated) call-around search for a brief. */
 export async function runSearch(brief: string, signal: AbortSignal): Promise<SearchResult> {
-  const response = await fetch('/api/search', {
+  const response = await fetch(api('/api/search'), {
     method: 'POST',
     headers: { 'content-type': 'application/json' },
     body: JSON.stringify({ brief }),

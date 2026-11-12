@@ -55,6 +55,8 @@ export default defineConfig(({ mode }) => {
   const env = loadEnv(mode, process.cwd(), '')
   const phone = mode === 'phone'
   return {
+    // GitHub Pages serves the app from /rent-chat/ (set BASE_PATH there); elsewhere it's the site root.
+    base: process.env.BASE_PATH || '/',
     plugins: [react(), chatApi(env.GOOGLE_AI_API_KEY), ...(phone ? [basicSsl()] : [])],
     server: { port: phone ? 5177 : 5176, strictPort: true, host: true },
   }

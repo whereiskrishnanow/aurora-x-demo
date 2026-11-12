@@ -1,3 +1,4 @@
+import { api } from './api'
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { voiceLevel } from './voiceLevel'
 import { makeAudioContext, startRecorder, type Recorder } from './recorder'
@@ -310,7 +311,7 @@ export function useDictation() {
     setStatusBoth('transcribing')
     voiceLevel.source(null)
     try {
-      const response = await fetch('/api/transcribe', { method: 'POST', headers: { 'content-type': 'audio/wav' }, body: audio })
+      const response = await fetch(api('/api/transcribe'), { method: 'POST', headers: { 'content-type': 'audio/wav' }, body: audio })
       const body = await response.json().catch(() => ({}))
       if (!response.ok) throw new Error(body.error || 'Couldn’t transcribe that recording.')
       teardown()
