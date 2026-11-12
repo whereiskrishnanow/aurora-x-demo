@@ -226,15 +226,29 @@ ul {
 }
 
 .starter-row {
-  display: flex;
-  gap: 5px;
-  overflow-x: auto;
-  scrollbar-width: none;
-  overscroll-behavior-x: contain;
+  overflow: hidden;
+  /* horizontal drags belong to the carousel; vertical ones still scroll the page */
+  touch-action: pan-y;
+  user-select: none;
+  -webkit-user-select: none;
+  /* soft edges so suggestions slide in and out rather than being cut */
+  -webkit-mask-image: linear-gradient(90deg, transparent, #000 18px, #000 calc(100% - 18px), transparent);
+  mask-image: linear-gradient(90deg, transparent, #000 18px, #000 calc(100% - 18px), transparent);
 }
 
-.starter-row::-webkit-scrollbar {
-  display: none;
+.starter-track {
+  display: flex;
+  width: max-content;
+  will-change: transform;
+  transform: translate3d(0, 0, 0);
+}
+
+/* One full set of suggestions; the trailing padding keeps the gap even where sets meet. */
+.starter-set {
+  display: flex;
+  flex: none;
+  gap: 5px;
+  padding-right: 5px;
 }
 
 .starter {

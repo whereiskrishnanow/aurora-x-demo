@@ -39,12 +39,16 @@ const STARTERS = [
     'Fully furnished 1bhk near metro',
     'Pet friendly homes in Whitefield',
     'Studio apartment under ₹15K',
+    '3bhk for a family in Jayanagar',
+    'Flatmates wanted in HSR Layout',
   ],
   [
     'Partially equipped with essentials',
     'Flats with covered parking',
     'Gated society with a gym',
     'Homes ready to move in this week',
+    'Walking distance to a tech park',
+    'Independent house with a terrace',
   ],
 ]
 
@@ -81,6 +85,7 @@ export default function App() {
   const [draft, setDraft] = useState('')
   const [menuOpen, setMenuOpen] = useState(false)
   const scrollRef = useRef<HTMLDivElement>(null)
+  const inputRef = useRef<HTMLInputElement>(null)
   const aiRequest = useRef<AbortController | null>(null)
   const [busy, setBusy] = useState(false)
   const firstPaint = useRef(true)
@@ -199,6 +204,16 @@ export default function App() {
     ]
     setMessages(next)
     askAI(next)
+  }
+
+  /** A tapped suggestion goes into the message box to edit or send. */
+  const prefill = (text: string) => {
+    setDraft(text)
+    const input = inputRef.current
+    if (!input) return
+    input.focus({ preventScroll: true })
+    // Cursor at the end, ready to add to it.
+    requestAnimationFrame(() => input.setSelectionRange(text.length, text.length))
   }
 
   const send = (event: FormEvent) => {
@@ -353,7 +368,7 @@ export default function App() {
         <div className="edge edge-top" aria-hidden="true" />
         {!voice.active && <div className="edge edge-bottom" aria-hidden="true" />}
 
-        {isEmpty && !voice.active && <StarterRows rows={STARTERS} onPick={submit} />}
+        {isEmpty && !voice.active && <StarterRows rows={STARTERS} onPick={prefill} />}
 
         {/* ---------- control layer: liquid glass ---------- */}
         <header className="header">
@@ -457,6 +472,7 @@ export default function App() {
             onSubmit={send}
           >
             <input
+              ref={inputRef}
               className="composer-input"
               value={draft}
               onChange={(e) => setDraft(e.target.value)}
