@@ -1294,6 +1294,8 @@ select {
   padding: 0 14px 2px;
   overflow-x: auto;
   scroll-snap-type: x mandatory;
+  /* Snap cards to the padded edge, not the scroller's raw edge. */
+  scroll-padding-inline: 14px;
   scrollbar-width: none;
 }
 
