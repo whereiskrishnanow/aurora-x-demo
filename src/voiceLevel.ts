@@ -17,6 +17,8 @@
 let speaking = false
 let lift = 0
 let micLevel = -1 // -1 when no meter is running
+/** a loudness reading supplied from elsewhere (the dictation recorder) */
+let external: (() => number) | null = null
 let micUsers = 0
 let mic: { stream: MediaStream; context: AudioContext; frame: number } | null = null
 const fine = window.matchMedia('(pointer: fine)')
@@ -51,11 +53,17 @@ export const voiceLevel = {
     lift = 0
   },
 
+  /** Take loudness from another meter (or stop, with null). */
+  source(read: (() => number) | null) {
+    external = read
+  },
+
   /** Current level, 0..1. Call once per frame. */
   read(now = performance.now()) {
     const dt = Math.min(now - lastRead, 100) / 1000
     lastRead = now
     lift *= Math.pow(0.08, dt) // a lift fades in well under a second
+    if (external) return Math.min(1, external() + lift * 0.25)
     if (micLevel >= 0) return Math.min(1, micLevel + lift * 0.25)
     const base = speaking ? 0.32 + 0.5 * rhythm(now / 1000) : 0.04
     return Math.min(1, base + lift * 0.45)

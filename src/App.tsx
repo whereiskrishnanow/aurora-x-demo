@@ -223,8 +223,9 @@ export default function App() {
   }
 
   /** Send what was dictated (nothing happens if nothing was heard). */
-  const sendDictation = () => {
-    const words = dictation.finish()
+  const sendDictation = async () => {
+    if (dictation.status === 'transcribing') return
+    const words = await dictation.finish()
     if (words) submit(words)
   }
 
@@ -505,7 +506,15 @@ export default function App() {
                       <span className="partial">{dictation.text.partial}</span>
                     </span>
                   ) : (
-                    <span className="dictation-hint">{dictation.status === 'paused' ? 'Paused' : 'Listening…'}</span>
+                    <span className="dictation-hint">
+                      {dictation.status === 'transcribing'
+                        ? 'Transcribing…'
+                        : dictation.status === 'paused'
+                          ? 'Paused'
+                          : dictation.mode === 'record'
+                            ? 'Recording… your words appear when you send'
+                            : 'Listening…'}
+                    </span>
                   )}
                 </p>
                 <div className="composer-tools dictation-bar">
@@ -529,6 +538,7 @@ export default function App() {
                     tint="rgba(255, 255, 255, 0.35)"
                     interactive
                     aria-label={dictation.status === 'paused' ? 'Resume dictation' : 'Pause dictation'}
+                    disabled={dictation.status === 'transcribing'}
                     onClick={dictation.status === 'paused' ? dictation.resume : dictation.pause}
                   >
                     {dictation.status === 'paused' ? <MicIcon /> : <PauseIcon />}
@@ -547,6 +557,7 @@ export default function App() {
                     tint="radial-gradient(circle at 50% 115%, rgba(20, 184, 166, 0.95), rgba(14, 148, 136, 0.86) 70%)"
                     interactive
                     aria-label="Send dictated message"
+                    disabled={dictation.status === 'transcribing'}
                     onClick={sendDictation}
                   >
                     <ArrowUpIcon />

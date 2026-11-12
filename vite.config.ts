@@ -3,39 +3,46 @@ import react from '@vitejs/plugin-react'
 import basicSsl from '@vitejs/plugin-basic-ssl'
 import { Readable } from 'node:stream'
 import { handleChat } from './server/chat'
+import { handleTranscribe } from './server/transcribe'
+
+const ROUTES: Record<string, (request: Request, apiKey: string | undefined) => Promise<Response>> = {
+  '/api/chat': handleChat,
+  '/api/transcribe': handleTranscribe,
+}
 
 /**
- * Serves /api/chat from the dev server. The key is read from .env.local on
+ * Serves /api/chat and /api/transcribe from the dev server. The key is read from .env.local on
  * the server side only (no VITE_ prefix), so it never reaches the browser.
  */
 function chatApi(apiKey: string | undefined): Plugin {
   return {
     name: 'chat-api',
     configureServer(server) {
-      server.middlewares.use('/api/chat', async (req, res) => {
-        const controller = new AbortController()
-        res.on('close', () => controller.abort())
-        try {
-          const chunks: Buffer[] = []
-          for await (const chunk of req) chunks.push(chunk as Buffer)
-          const request = new Request('http://localhost/api/chat', {
-            method: req.method,
-            headers: { 'content-type': 'application/json' },
-            body: req.method === 'POST' ? Buffer.concat(chunks) : undefined,
-            signal: controller.signal,
-          })
-          const response = await handleChat(request, apiKey)
-          res.statusCode = response.status
-          response.headers.forEach((value, key) => res.setHeader(key, value))
-          if (response.body) Readable.fromWeb(response.body as never).pipe(res)
-          else res.end()
-        } catch (error) {
-          if (controller.signal.aborted) return
-          console.error('[api/chat]', error)
-          res.statusCode = 500
-          res.end(JSON.stringify({ error: 'Chat failed' }))
-        }
-      })
+      for (const [route, handler] of Object.entries(ROUTES))
+        server.middlewares.use(route, async (req, res) => {
+          const controller = new AbortController()
+          res.on('close', () => controller.abort())
+          try {
+            const chunks: Buffer[] = []
+            for await (const chunk of req) chunks.push(chunk as Buffer)
+            const request = new Request(`http://localhost${route}`, {
+              method: req.method,
+              headers: { 'content-type': String(req.headers['content-type'] ?? 'application/json') },
+              body: req.method === 'POST' ? Buffer.concat(chunks) : undefined,
+              signal: controller.signal,
+            })
+            const response = await handler(request, apiKey)
+            res.statusCode = response.status
+            response.headers.forEach((value, key) => res.setHeader(key, value))
+            if (response.body) Readable.fromWeb(response.body as never).pipe(res)
+            else res.end()
+          } catch (error) {
+            if (controller.signal.aborted) return
+            console.error(`[${route}]`, error)
+            res.statusCode = 500
+            res.end(JSON.stringify({ error: 'Chat failed' }))
+          }
+        })
     },
   }
 }
