@@ -727,9 +727,23 @@ export default function App() {
             <p className="wordmark" aria-label="Aurora">
               aurora<span>.</span>
             </p>
-            <button type="button" className="tool" aria-label="Close menu" onClick={() => setMenuOpen(false)}>
+            <LiquidGlass
+              as="button"
+              type="button"
+              className="drawer-close"
+              radius={19}
+              bezel={11}
+              thickness={10}
+              blur={0.5}
+              aberration={0.1}
+              specular={1}
+              tint="rgba(255, 255, 255, 0.4)"
+              interactive
+              aria-label="Close menu"
+              onClick={() => setMenuOpen(false)}
+            >
               <CloseIcon />
-            </button>
+            </LiquidGlass>
           </div>
           <h2 className="drawer-title">Recent searches</h2>
           <ul>
