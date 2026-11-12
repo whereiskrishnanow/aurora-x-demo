@@ -1869,8 +1869,24 @@ select {
 }
 
 .mode-option.selected {
-  background: rgba(255, 255, 255, 0.7);
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+  color: #fff;
+  background: linear-gradient(180deg, #14adad, #009999);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.25),
+    0 3px 10px rgba(0, 153, 153, 0.25);
+}
+
+.mode-option.selected .mode-desc {
+  color: rgba(255, 255, 255, 0.85);
+}
+
+.mode-option.selected svg {
+  color: #fff;
+}
+
+.mode-option.selected .mode-tag {
+  color: #fff;
+  background: rgba(255, 255, 255, 0.22);
 }
 
 .mode-option svg {
