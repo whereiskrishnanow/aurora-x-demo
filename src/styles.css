@@ -1129,3 +1129,78 @@ select {
   font-family: inherit;
   font-variation-settings: inherit;
 }
+
+/* ---------- dictation (the composer's microphone) ---------- */
+
+.dictation-text {
+  height: 42px;
+  margin: 0;
+  padding: 0 13px;
+  overflow: hidden;
+  display: flex;
+  align-items: center;
+  font-size: 16px;
+  letter-spacing: -0.006em;
+  white-space: nowrap;
+}
+
+/* Once the words outgrow the line, the start fades out on the left. */
+.dictation-text.overflowing {
+  -webkit-mask-image: linear-gradient(90deg, transparent, #000 22px);
+  mask-image: linear-gradient(90deg, transparent, #000 22px);
+}
+
+.dictation-text .partial {
+  color: #8c8c8c;
+}
+
+.dictation-hint {
+  color: #838383;
+}
+
+.dictation-bar {
+  gap: 8px;
+  animation: dictation-in 0.32s cubic-bezier(0.2, 0.9, 0.3, 1) both;
+}
+
+@keyframes dictation-in {
+  from {
+    opacity: 0;
+    transform: translateY(6px);
+  }
+}
+
+.dictation-cancel {
+  width: 40px;
+  color: #6b6b6b;
+}
+
+.waveform {
+  flex: 1;
+  min-width: 0;
+  height: 26px;
+  color: #2b2b2b;
+}
+
+.dictation-time {
+  min-width: 34px;
+  font-size: 15px;
+  font-variant-numeric: tabular-nums;
+  color: #5a5a5a;
+  text-align: right;
+}
+
+.dictation-pause {
+  width: 42px;
+  height: 42px;
+  flex: none;
+  color: #1b1b1b;
+  box-shadow:
+    0 0 0 0.5px rgba(0, 0, 0, 0.1),
+    0 1px 2px rgba(0, 0, 0, 0.08),
+    0 4px 10px rgba(0, 0, 0, 0.07);
+}
+
+.composer-tools .voice-send svg {
+  display: block;
+}

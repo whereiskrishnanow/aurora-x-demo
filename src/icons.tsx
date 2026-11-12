@@ -60,6 +60,13 @@ export const MicOffIcon = () => (
   </svg>
 )
 
+export const PauseIcon = () => (
+  <svg {...base(22)} fill="currentColor" stroke="none">
+    <rect x="7" y="5.5" width="3.4" height="13" rx="1.2" />
+    <rect x="13.6" y="5.5" width="3.4" height="13" rx="1.2" />
+  </svg>
+)
+
 export const CheckIcon = () => (
   <svg {...base(15)} strokeWidth={2}>
     <path d="m5 12.5 4.5 4.5L19 7.5" />

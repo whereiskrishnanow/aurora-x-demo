@@ -5,10 +5,13 @@ import { VoiceButton } from './VoiceButton'
 import { VoiceAurora } from './VoiceAurora'
 import { useVoiceMode } from './useVoiceMode'
 import { useKeyboardOpen } from './useKeyboardOpen'
+import { useDictation } from './useDictation'
+import { Waveform } from './Waveform'
 import brandRibbon from './assets/brand-ribbon.png'
 import { LISTINGS, RECENT_SEARCHES, nextId, seedConversation, type Message } from './chat'
 import { ChatError, streamReply } from './ai'
 import {
+  ArrowUpIcon,
   CheckIcon,
   CloseIcon,
   ComposeIcon,
@@ -17,6 +20,7 @@ import {
   MenuIcon,
   MicIcon,
   MicOffIcon,
+  PauseIcon,
   PinIcon,
   PlusIcon,
   SignalBars,
@@ -88,6 +92,16 @@ export default function App() {
   const scrollRef = useRef<HTMLDivElement>(null)
   const inputRef = useRef<HTMLInputElement>(null)
   const keyboardOpen = useKeyboardOpen()
+  const dictation = useDictation()
+  const dictating = dictation.status !== 'off'
+  const dictationTextRef = useRef<HTMLParagraphElement>(null)
+  // Keep the newest dictated words in view.
+  useEffect(() => {
+    const el = dictationTextRef.current
+    if (!el) return
+    el.scrollLeft = el.scrollWidth
+    el.classList.toggle('overflowing', el.scrollWidth > el.clientWidth + 1)
+  }, [dictation.text])
   const aiRequest = useRef<AbortController | null>(null)
   const [busy, setBusy] = useState(false)
   const firstPaint = useRef(true)
@@ -208,6 +222,12 @@ export default function App() {
     askAI(next)
   }
 
+  /** Send what was dictated (nothing happens if nothing was heard). */
+  const sendDictation = () => {
+    const words = dictation.finish()
+    if (words) submit(words)
+  }
+
   /** A tapped suggestion goes into the message box to edit or send. */
   const prefill = (text: string) => {
     setDraft(text)
@@ -277,7 +297,7 @@ export default function App() {
           {isEmpty && (
             <div className={`empty${keyboardOpen ? ' keyboard-open' : ''}`} aria-hidden={keyboardOpen || undefined}>
               <img className="empty-mark" src={brandRibbon} alt="" width={58} height={41} />
-              <h2>Find Anything</h2>
+              <h2>Just ask and find</h2>
               <p>What can I do for you today?</p>
             </div>
           )}
@@ -473,29 +493,97 @@ export default function App() {
             tint="rgba(255, 255, 255, 0.4)"
             onSubmit={send}
           >
-            <input
-              ref={inputRef}
-              className="composer-input"
-              value={draft}
-              onChange={(e) => setDraft(e.target.value)}
-              placeholder="Ask anything"
-              aria-label="Message"
-              enterKeyHint="send"
-              autoComplete="off"
-            />
-            <div className="composer-tools">
-              <button type="button" className="tool" aria-label="Add attachment">
-                <PlusIcon />
-              </button>
-              <span className="spacer" />
-              <button type="button" className="tool" aria-label="Search preferences">
-                <SlidersIcon />
-              </button>
-              <button type="button" className="tool" aria-label="Dictate">
-                <MicIcon />
-              </button>
-              <VoiceButton canSend={canSend} onVoice={voice.enter} />
-            </div>
+            {dictating ? (
+              <>
+                {/* What has been heard so far: settled words dark, words still forming lighter. */}
+                <p className="dictation-text" aria-live="polite" ref={dictationTextRef}>
+                  {dictation.error ? (
+                    <span className="dictation-hint">{dictation.error}</span>
+                  ) : dictation.text.settled || dictation.text.partial ? (
+                    <span>
+                      {dictation.text.settled}
+                      <span className="partial">{dictation.text.partial}</span>
+                    </span>
+                  ) : (
+                    <span className="dictation-hint">{dictation.status === 'paused' ? 'Paused' : 'Listening…'}</span>
+                  )}
+                </p>
+                <div className="composer-tools dictation-bar">
+                  <button type="button" className="tool dictation-cancel" aria-label="Cancel dictation" onClick={dictation.cancel}>
+                    <CloseIcon />
+                  </button>
+                  <Waveform
+                    level={dictation.level}
+                    running={dictation.status === 'recording'}
+                    activity={dictation.text.settled.length + dictation.text.partial.length}
+                  />
+                  <span className="dictation-time">
+                    {Math.floor(dictation.elapsed / 60000)}:{String(Math.floor(dictation.elapsed / 1000) % 60).padStart(2, '0')}
+                  </span>
+                  <LiquidGlass
+                    as="button"
+                    type="button"
+                    className="dictation-pause"
+                    radius={21}
+                    bezel={12}
+                    thickness={10}
+                    blur={0.5}
+                    aberration={0.1}
+                    specular={1}
+                    tint="rgba(255, 255, 255, 0.35)"
+                    interactive
+                    aria-label={dictation.status === 'paused' ? 'Resume dictation' : 'Pause dictation'}
+                    onClick={dictation.status === 'paused' ? dictation.resume : dictation.pause}
+                  >
+                    {dictation.status === 'paused' ? <MicIcon /> : <PauseIcon />}
+                  </LiquidGlass>
+                  <LiquidGlass
+                    as="button"
+                    type="button"
+                    className="voice voice-send"
+                    radius={21}
+                    bezel={13}
+                    thickness={12}
+                    ior={1.6}
+                    blur={0.5}
+                    aberration={0.14}
+                    specular={1}
+                    tint="radial-gradient(circle at 50% 115%, rgba(20, 184, 166, 0.95), rgba(14, 148, 136, 0.86) 70%)"
+                    interactive
+                    aria-label="Send dictated message"
+                    onClick={sendDictation}
+                  >
+                    <ArrowUpIcon />
+                  </LiquidGlass>
+                </div>
+              </>
+            ) : (
+              <>
+              <input
+                ref={inputRef}
+                className="composer-input"
+                value={draft}
+                onChange={(e) => setDraft(e.target.value)}
+                placeholder="Ask anything"
+                aria-label="Message"
+                enterKeyHint="send"
+                autoComplete="off"
+              />
+              <div className="composer-tools">
+                <button type="button" className="tool" aria-label="Add attachment">
+                  <PlusIcon />
+                </button>
+                <span className="spacer" />
+                <button type="button" className="tool" aria-label="Search preferences">
+                  <SlidersIcon />
+                </button>
+                <button type="button" className="tool" aria-label="Dictate" onClick={dictation.start}>
+                  <MicIcon />
+                </button>
+                <VoiceButton canSend={canSend} onVoice={voice.enter} />
+              </div>
+              </>
+            )}
           </LiquidGlass>
         )}
 
