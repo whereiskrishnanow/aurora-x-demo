@@ -1,7 +1,7 @@
 {
-  "name": "Rent Chat",
-  "short_name": "Rent Chat",
-  "description": "Find homes to rent in Bengaluru by chatting or talking.",
+  "name": "aurora-x-demo",
+  "short_name": "aurora-x-demo",
+  "description": "Just ask and find: an Aurora-style agent demo.",
   "start_url": "./",
   "scope": "./",
   "display": "fullscreen",
