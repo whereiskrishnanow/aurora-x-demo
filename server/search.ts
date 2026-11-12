@@ -25,6 +25,7 @@ const SCHEMA = {
           price: { type: 'STRING' },
           detail: { type: 'STRING' },
           quote: { type: 'STRING' },
+          takeaway: { type: 'STRING' },
           badge: { type: 'STRING' },
           duration: { type: 'STRING' },
           transcript: {
@@ -36,7 +37,7 @@ const SCHEMA = {
             },
           },
         },
-        required: ['name', 'rating', 'reviews', 'distance', 'price', 'detail', 'quote', 'badge', 'duration', 'transcript'],
+        required: ['name', 'rating', 'reviews', 'distance', 'price', 'detail', 'quote', 'takeaway', 'badge', 'duration', 'transcript'],
       },
     },
     summary: { type: 'STRING' },
@@ -55,6 +56,7 @@ Invent a realistic outcome for a product prototype:
   name; rating 4.0 to 5.0; reviews count; distance like "1.2 km"; price in rupees using the ₹ sign (e.g. "₹1,800", "₹28,000/month", "₹450/visit");
   detail: one short line of the key facts (e.g. "Delivers by 4:30 PM · 2 dozen in stock");
   quote: what the person on the phone said, one natural sentence;
+  takeaway: Aurora's own one-line summary of what this business confirmed, in the third person and plain words, at most 14 words (e.g. "Has 2 dozen red roses in stock and can deliver before 5 PM.");
   badge: one of "Best price", "Fastest", "Closest", "Top rated", "In stock" (each at most once);
   duration: how long the call took, like "1:42";
   transcript: the call in 4 short lines, alternating speaker "Aurora" (the agent asking) and "Business" (the reply), consistent with the quote.

@@ -16,6 +16,8 @@ export interface SearchResult {
     price: string
     detail: string
     quote: string
+    /** Aurora's one-line summary of what this business confirmed */
+    takeaway?: string
     badge: string
     duration?: string
     transcript?: { speaker: string; text: string }[]

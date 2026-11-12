@@ -14,6 +14,8 @@ interface Kind {
   price: () => string
   details: string[]
   quotes: string[]
+  /** Aurora's summary of each answer, in the same order as quotes */
+  takeaways: string[]
   ask: string
 }
 
@@ -29,6 +31,7 @@ const KINDS: Kind[] = [
     price: () => rupees(between(600, 1400, 10)),
     details: ['In stock · Ready for pickup now', 'Home delivery in 30 min', 'Open till 11 PM · Prescription needed', 'Cold-chain stored · Delivery in 45 min'],
     quotes: ['Yes, we have it in stock right now, you can pick it up anytime.', 'We have two boxes left, we can deliver within half an hour.', 'It’s available, please bring your prescription along.', 'In stock, and we can send it with our delivery person in 45 minutes.'],
+    takeaways: ["Has it in stock now and it's ready for pickup.", "Has two boxes left and can deliver in 30 minutes.", "Has it available; bring your prescription.", "In stock, cold-stored, delivery in about 45 minutes."],
     ask: 'Do you have this in stock right now?',
   },
   {
@@ -38,6 +41,7 @@ const KINDS: Kind[] = [
     price: () => rupees(between(1200, 2600)),
     details: ['Delivers by 4:30 PM · Fresh stock', 'Same-day delivery · Hand-tied bouquet', 'Ready in 1 hour · Free card', 'Delivery by 5 PM · Premium long-stem'],
     quotes: ['We have fresh roses today and can deliver well before 5.', 'Yes, our delivery person can reach you by 4:30.', 'We can make the bouquet in an hour and send it right away.', 'Same-day delivery is no problem, the roses came in this morning.'],
+    takeaways: ["Has fresh roses today and can deliver before 5 PM.", "Can deliver by 4:30 PM today.", "Can make the bouquet in an hour and send it right away.", "Same-day delivery works; roses arrived this morning."],
     ask: 'Can you deliver this today, and what would it cost?',
   },
   {
@@ -47,6 +51,7 @@ const KINDS: Kind[] = [
     price: () => `${rupees(between(250, 600))}/visit`,
     details: ['Can come by 5 PM · Visit charge only', 'Arrives within 2 hours', 'Available this evening · Parts extra', 'Free inspection with repair'],
     quotes: ['Our plumber is nearby and can come by 5 today.', 'We can send someone within two hours, visit charge is fixed.', 'Yes, this evening works, parts would be extra if needed.', 'We’ll inspect for free if you go ahead with the repair.'],
+    takeaways: ["Plumber is nearby and can come by 5 PM today.", "Can send someone within two hours at a fixed visit charge.", "Available this evening; parts charged separately.", "Free inspection if you go ahead with the repair."],
     ask: 'Can someone come today, and what’s the visit charge?',
   },
   {
@@ -56,6 +61,7 @@ const KINDS: Kind[] = [
     price: () => rupees(between(1400, 3200)),
     details: ['Ready by 6:30 PM · Eggless option', 'Delivered by 7 PM · Custom message', 'Ready in 3 hours · 2 kg', 'Free delivery nearby'],
     quotes: ['We can have it ready by 6:30 this evening.', 'Yes, we’ll deliver by 7 with your message on top.', 'A 2 kg cake works for that, ready in about three hours.', 'We can do it, and delivery is free in your area.'],
+    takeaways: ["Can have it ready by 6:30 this evening.", "Will deliver by 7 PM with your message on top.", "A 2 kg cake fits; ready in about three hours.", "Can do it, with free delivery in your area."],
     ask: 'Can you have this ready by this evening?',
   },
   {
@@ -65,6 +71,7 @@ const KINDS: Kind[] = [
     price: () => rupees(between(600, 1600)),
     details: ['Visit by 6:30 PM · Gas check included', 'Available this evening', 'Arrives within 3 hours · 30-day warranty', 'Free diagnosis with service'],
     quotes: ['Our technician is close by and can come this evening.', 'We can check it today, the gas check is included.', 'Someone can be there in about three hours.', 'Diagnosis is free if you go ahead with the service.'],
+    takeaways: ["Technician is close by and can come this evening.", "Can check it today; gas check included.", "Can be there in about three hours.", "Free diagnosis if you go ahead with the service."],
     ask: 'Can a technician come this evening?',
   },
   {
@@ -74,6 +81,7 @@ const KINDS: Kind[] = [
     price: () => `${rupees(between(350, 750, 10))}/plate`,
     details: ['Veg & non-veg · Staff included', 'Minimum 30 plates · Free tasting', 'Buffet setup · 2 servers', 'Delivery and setup included'],
     quotes: ['We can do a mixed menu with serving staff for that number.', 'Yes, and we offer a free tasting before you confirm.', 'We’d send two servers and set up the buffet.', 'Delivery and setup are included in the per-plate price.'],
+    takeaways: ["Can cater a mixed menu with serving staff.", "Can do it and offers a free tasting first.", "Will send two servers and set up the buffet.", "Delivery and setup are included in the price."],
     ask: 'Can you cater this, and what’s the per-plate cost?',
   },
   {
@@ -83,6 +91,7 @@ const KINDS: Kind[] = [
     price: () => `${rupees(between(14000, 42000, 500))}/month`,
     details: ['Semi furnished · Ready to move', 'Covered parking · Gated society', 'Fully furnished · 2 months deposit', 'Near metro · Pets allowed'],
     quotes: ['It’s available from next week, you can visit tomorrow.', 'Yes, the flat is vacant and comes with covered parking.', 'It’s fully furnished, the deposit is two months’ rent.', 'Still available, and pets are fine with the owner.'],
+    takeaways: ["Available from next week; you can visit tomorrow.", "Vacant now and comes with covered parking.", "Fully furnished; deposit is two months' rent.", "Still available, and the owner is fine with pets."],
     ask: 'Is it still available, and what’s the rent?',
   },
 ]
@@ -94,6 +103,7 @@ const GENERAL: Kind = {
   price: () => rupees(between(400, 2500)),
   details: ['Available today · Fixed price', 'Can start within 2 hours', 'Open late · Free quote', 'Same-day service'],
   quotes: ['Yes, we can take that up today.', 'We can start within a couple of hours.', 'We’re open late and can give you a fixed quote.', 'Same-day works, just confirm and we’ll be there.'],
+    takeaways: ["Can take it up today.", "Can start within a couple of hours.", "Open late and will give a fixed quote.", "Can do it the same day once you confirm."],
   ask: 'Can you help with this today?',
 }
 
@@ -116,6 +126,7 @@ export function demoSearch(brief: string, place: string): SearchResult {
       price,
       detail: kind.details[i % kind.details.length],
       quote,
+      takeaway: kind.takeaways[i % kind.takeaways.length],
       badge: BADGES[i],
       duration: `${minutes}:${String(between(5, 55, 1)).padStart(2, '0')}`,
       transcript: [
