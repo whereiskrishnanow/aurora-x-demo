@@ -26,6 +26,7 @@ import {
   PauseIcon,
   PinIcon,
   PlusIcon,
+  SearchIcon,
   SignalBars,
   SlidersIcon,
 } from './icons'
@@ -109,6 +110,10 @@ export default function App() {
   /** saved searches from Supabase; null until loaded or if storage isn't available */
   const [saved, setSaved] = useState<SavedSearch[] | null>(null)
   const [openSavedId, setOpenSavedId] = useState<string | null>(null)
+  /** search within Recent searches */
+  const [menuSearch, setMenuSearch] = useState(false)
+  const [menuQuery, setMenuQuery] = useState('')
+  const menuSearchRef = useRef<HTMLInputElement>(null)
   const [awaitingBrief, setAwaitingBrief] = useState(!demo)
   const [typing, setTyping] = useState(false)
   const [draft, setDraft] = useState('')
@@ -275,6 +280,16 @@ export default function App() {
     }
   }
 
+  /** Does a recent search match what was typed in the menu's search field? */
+  const matches = (query: string, ...fields: (string | null | undefined)[]) => {
+    const q = query.trim().toLowerCase()
+    return !q || fields.some((f) => f?.toLowerCase().includes(q))
+  }
+  const matchesFor = (query: string) =>
+    saved && saved.length > 0
+      ? saved.filter((item) => matches(query, item.title, item.place, item.query))
+      : RECENT_SEARCHES.filter((item) => matches(query, item.title, item.place))
+
   /** Reopen a saved search: the question, its results and the summary. */
   const openSaved = (item: SavedSearch) => {
     aiRequest.current?.abort()
@@ -298,9 +313,13 @@ export default function App() {
     setMenuOpen(false)
   }
 
-  // Load saved searches whenever the menu opens.
+  // Load saved searches whenever the menu opens; clear the menu search when it closes.
   useEffect(() => {
-    if (!menuOpen) return
+    if (!menuOpen) {
+      setMenuSearch(false)
+      setMenuQuery('')
+      return
+    }
     let live = true
     listSearches().then((list) => {
       if (live && list) setSaved(list)
@@ -739,16 +758,52 @@ export default function App() {
               specular={1}
               tint="rgba(255, 255, 255, 0.4)"
               interactive
+              aria-label={menuSearch ? 'Hide search' : 'Search recent searches'}
+              aria-pressed={menuSearch}
+              onClick={() => {
+                const next = !menuSearch
+                setMenuSearch(next)
+                if (next) requestAnimationFrame(() => menuSearchRef.current?.focus())
+                else setMenuQuery('')
+              }}
+            >
+              <SearchIcon />
+            </LiquidGlass>
+            <LiquidGlass
+              as="button"
+              type="button"
+              className="drawer-close"
+              radius={19}
+              bezel={11}
+              thickness={10}
+              blur={0.5}
+              aberration={0.1}
+              specular={1}
+              tint="rgba(255, 255, 255, 0.4)"
+              interactive
               aria-label="Close menu"
               onClick={() => setMenuOpen(false)}
             >
               <CloseIcon />
             </LiquidGlass>
           </div>
+          {menuSearch && (
+            <input
+              ref={menuSearchRef}
+              className="drawer-search"
+              type="search"
+              value={menuQuery}
+              onChange={(e) => setMenuQuery(e.target.value)}
+              placeholder="Search your searches"
+              aria-label="Search recent searches"
+              enterKeyHint="search"
+            />
+          )}
           <h2 className="drawer-title">Recent searches</h2>
           <ul>
+            {menuQuery.trim() && matchesFor(menuQuery).length === 0 && <li className="drawer-empty">No matching searches</li>}
             {saved && saved.length > 0
-              ? saved.map((item) => (
+              ? saved.filter((item) => matches(menuQuery, item.title, item.place, item.query)).map((item) => (
                   <li key={item.id}>
                     <button type="button" className={item.id === openSavedId ? 'current' : ''} onClick={() => openSaved(item)}>
                       <span>{item.title}</span>
@@ -756,7 +811,7 @@ export default function App() {
                   </li>
                 ))
               : // Until you've searched (or if storage is unavailable), show examples.
-                RECENT_SEARCHES.map((item, index) => (
+                RECENT_SEARCHES.filter((item) => matches(menuQuery, item.title, item.place)).map((item, index) => (
                   <li key={item.title}>
                     <button type="button" className={index === 0 ? 'current' : ''} onClick={() => setMenuOpen(false)}>
                       <span>{item.title}</span>

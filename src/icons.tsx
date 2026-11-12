@@ -91,6 +91,13 @@ export const ArrowUpIcon = () => (
   </svg>
 )
 
+export const SearchIcon = () => (
+  <svg {...base(20)}>
+    <circle cx="11" cy="11" r="6.4" />
+    <path d="m16 16 3.6 3.6" />
+  </svg>
+)
+
 export const CloseIcon = () => (
   <svg {...base(20)}>
     <path d="m6 6 12 12M18 6 6 18" />
