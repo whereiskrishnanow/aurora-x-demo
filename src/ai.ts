@@ -1,4 +1,5 @@
 import { api } from './api'
+import { demoSearch } from './demoSearch'
 import type { Message, SearchResult } from './chat'
 
 /** Mirrors META_MARK in server/chat.ts. */
@@ -105,15 +106,26 @@ export async function streamReply(
   return { text, meta }
 }
 
-/** Run the (simulated) call-around search for a brief. */
-export async function runSearch(brief: string, signal: AbortSignal): Promise<SearchResult> {
-  const response = await fetch(api('/api/search'), {
-    method: 'POST',
-    headers: { 'content-type': 'application/json' },
-    body: JSON.stringify({ brief }),
-    signal,
-  })
-  const body = await response.json().catch(() => null)
-  if (!response.ok || !body?.results) throw new Error(body?.error ?? 'The search couldn’t run right now.')
-  return body as SearchResult
+/**
+ * Run the (simulated) call-around search for a brief. If the AI can't run it
+ * (free quota used up, busy, offline), built-in demo results stand in, so the
+ * demo always completes.
+ */
+export async function runSearch(brief: string, signal: AbortSignal, place = ''): Promise<SearchResult> {
+  try {
+    const response = await fetch(api('/api/search'), {
+      method: 'POST',
+      headers: { 'content-type': 'application/json' },
+      body: JSON.stringify({ brief }),
+      signal,
+    })
+    const body = await response.json().catch(() => null)
+    if (response.ok && Array.isArray(body?.results) && body.results.length) return body as SearchResult
+  } catch (error) {
+    if (signal.aborted) throw error
+  }
+  // Let the "calling" animation run a moment before the stand-in results land.
+  await new Promise((resolve) => setTimeout(resolve, 2500))
+  if (signal.aborted) throw new DOMException('Aborted', 'AbortError')
+  return demoSearch(brief, place)
 }

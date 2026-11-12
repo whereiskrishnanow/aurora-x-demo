@@ -62,14 +62,30 @@ const DEFAULT_TITLE = 'New chat'
 const DEFAULT_PLACE = 'Indiranagar'
 
 /** Pull the area out of a brief like "2bhk house for rent in Indiranagar". */
+/** Bengaluru areas we recognise in a first message. */
+const AREAS = [
+  'Indiranagar', 'Koramangala', 'HSR Layout', 'Whitefield', 'Jayanagar', 'JP Nagar', 'BTM Layout', 'Marathahalli',
+  'Bellandur', 'Electronic City', 'Hebbal', 'Yelahanka', 'Malleshwaram', 'Rajajinagar', 'Basavanagudi', 'Banashankari',
+  'Sarjapur', 'Sarjapur Road', 'Bannerghatta Road', 'MG Road', 'Brigade Road', 'Ulsoor', 'Domlur', 'Frazer Town',
+  'Hennur', 'Kalyan Nagar', 'RT Nagar', 'Sadashivanagar', 'Vijayanagar', 'Yeshwanthpur', 'Hosur Road', 'Kammanahalli',
+  'Banaswadi', 'KR Puram', 'Mahadevapura', 'Brookefield', 'Kundalahalli', 'Bommanahalli', 'Wilson Garden', 'Richmond Town',
+]
+
+/**
+ * Pull a known area out of a first message, e.g. "2bhk house for rent in
+ * Indiranagar". Only real area names count, so "insulin in stock" or "near
+ * metro" don't become places.
+ */
 function parseBrief(text: string, fallback: string) {
-  const match = text.match(/^(.*?)\s+(?:in|at|near)\s+([^,.]+?)\s*[.!]?$/i)
-  // "near metro", "near my office" describe a must-have, not an area.
-  if (!match || /^(?:the |a |my )?(?:metro|office|work|station|college|school|campus|me)\b/i.test(match[2])) {
-    return { title: text, place: fallback }
-  }
-  const place = match[2].replace(/\b\w/g, (c) => c.toUpperCase())
-  return { title: match[1], place }
+  const lower = text.toLowerCase()
+  const area = [...AREAS]
+    .sort((a, b) => b.length - a.length)
+    .find((a) => new RegExp(`\\b${a.toLowerCase().replace(/ /g, '\\s+')}\\b`).test(lower))
+  if (!area) return { title: text, place: fallback }
+  const title = text
+    .replace(new RegExp(`\\s*(?:in|at|near|around)?\\s*${area.replace(/ /g, '\\s+')}\\b[,.!]?`, 'i'), '')
+    .trim()
+  return { title: title || text, place: area }
 }
 
 /** What the assistant says aloud for a message; its on-screen text must match it. */
@@ -221,7 +237,7 @@ export default function App() {
     const controller = new AbortController()
     searchRequest.current = controller
     try {
-      const result = await runSearch(brief, controller.signal)
+      const result = await runSearch(brief, controller.signal, placeRef.current)
       if (controller.signal.aborted) return
       setMessages((all) => all.map((m) => (m.id === id && m.kind === 'search' ? { ...m, result } : m)))
       // The summary follows once the result cards have slid in.
