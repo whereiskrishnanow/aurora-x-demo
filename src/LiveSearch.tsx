@@ -141,7 +141,6 @@ export function LiveSearch({
           ))}
         </div>
       )}
-      <p className="live-note">Demo · calls and results are simulated</p>
     </div>
   )
 }

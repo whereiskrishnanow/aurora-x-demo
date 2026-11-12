@@ -233,7 +233,6 @@ export function CallSheet({ business, place, onClose }: { business: Business | n
                 </div>
               </div>
             </div>
-            <p className="player-note">Simulated call · played back with device voices</p>
 
             {/* ---------- transcript ---------- */}
             <div className="sheet-transcript" ref={transcriptRef}>
