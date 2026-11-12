@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 import type { SearchResult } from './chat'
 import { LiquidGlass } from './glass/LiquidGlass'
+import { CALL_NUMBER, callNumber } from './api'
 import { CloseIcon, LocateIcon, PauseIcon, PhoneIcon } from './icons'
 
 type Business = SearchResult['results'][number]
@@ -166,11 +167,7 @@ export function CallSheet({ business, place, onClose }: { business: Business | n
     const query = encodeURIComponent(`${place || 'Bengaluru'}, Bengaluru`)
     window.open(`https://www.google.com/maps/search/?api=1&query=${query}`, '_blank', 'noopener')
   }
-  const [note, setNote] = useState('')
-  const call = () => {
-    setNote('Calling isn’t available for demo businesses.')
-    window.setTimeout(() => setNote(''), 2600)
-  }
+  const call = callNumber
 
   const glassButton = { bezel: 10, thickness: 9, blur: 0.5, aberration: 0.1, specular: 1, interactive: true } as const
 
@@ -250,16 +247,15 @@ export function CallSheet({ business, place, onClose }: { business: Business | n
             </div>
 
             <div className="sheet-actions">
-              <LiquidGlass as="button" type="button" className="sheet-action" radius={21} {...glassButton} tint="rgba(255,255,255,0.4)" onClick={call}>
+              <LiquidGlass as="button" type="button" className="sheet-action sheet-call" radius={21} {...glassButton} tint="rgba(255,255,255,0.4)" aria-label={`Call ${CALL_NUMBER}`} onClick={call}>
                 <PhoneIcon />
-                Call
+                Call {CALL_NUMBER}
               </LiquidGlass>
               <LiquidGlass as="button" type="button" className="sheet-action" radius={21} {...glassButton} tint="rgba(255,255,255,0.4)" onClick={locate}>
                 <LocateIcon />
                 Locate
               </LiquidGlass>
             </div>
-            {note && <p className="live-toast sheet-toast">{note}</p>}
           </>
         )}
       </LiquidGlass>

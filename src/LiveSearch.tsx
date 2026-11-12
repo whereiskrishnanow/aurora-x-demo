@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import type { SearchResult } from './chat'
 import { LiquidGlass } from './glass/LiquidGlass'
+import { CALL_NUMBER, callNumber } from './api'
 import { LocateIcon, PhoneIcon } from './icons'
 
 /**
@@ -22,12 +23,8 @@ const glass = {
 } as const
 
 function ResultCard({ r, place, onOpenCall }: { r: Business; place: string; onOpenCall: (r: Business) => void }) {
-  const [note, setNote] = useState('')
 
-  const call = () => {
-    setNote('Calling isn’t available for demo businesses.')
-    window.setTimeout(() => setNote(''), 2600)
-  }
+  const call = callNumber
   // Demo businesses have no address, so show the area they'd be in.
   const locate = () => {
     const query = encodeURIComponent(`${place || 'Bengaluru'}, Bengaluru`)
@@ -60,14 +57,13 @@ function ResultCard({ r, place, onOpenCall }: { r: Business; place: string; onOp
         >
           View call info
         </LiquidGlass>
-        <LiquidGlass as="button" type="button" className="live-action live-icon" radius={17} {...glass} aria-label={`Call ${r.name}`} onClick={call}>
+        <LiquidGlass as="button" type="button" className="live-action live-icon" radius={17} {...glass} aria-label={`Call ${CALL_NUMBER}`} title={`Call ${CALL_NUMBER}`} onClick={call}>
           <PhoneIcon />
         </LiquidGlass>
         <LiquidGlass as="button" type="button" className="live-action live-icon" radius={17} {...glass} aria-label={`Locate ${r.name}`} onClick={locate}>
           <LocateIcon />
         </LiquidGlass>
       </div>
-      {note && <p className="live-toast">{note}</p>}
     </article>
   )
 }
