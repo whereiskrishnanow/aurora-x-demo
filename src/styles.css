@@ -75,6 +75,9 @@ ul {
     background: #dfe1e4;
   }
   .screen {
+    /* clear the frame's rounded corners */
+    --safe-top: 26px;
+    --composer-bottom: 22px;
     width: 402px;
     height: min(874px, calc(100dvh - 40px));
     border-radius: 56px;

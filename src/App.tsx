@@ -24,19 +24,9 @@ import {
 
 // On a desktop browser the screen sits in a phone frame with a drawn status
 // bar; on a real phone the system draws its own. `?device` forces the frame.
-// The drawn status bar and notch belong only to the desktop phone frame
-// (wide windows); at phone widths the real device draws its own.
-const forceDevice = new URLSearchParams(location.search).has('device')
-const framed = window.matchMedia('(min-width: 520px)')
-function useSimulated() {
-  const [wide, setWide] = useState(framed.matches)
-  useEffect(() => {
-    const update = () => setWide(framed.matches)
-    framed.addEventListener('change', update)
-    return () => framed.removeEventListener('change', update)
-  }, [])
-  return forceDevice || wide
-}
+// A drawn iPhone status bar and notch, only on request with `?device`
+// (for screenshots). Everywhere else the screen starts right at the top.
+const simulatedDevice = new URLSearchParams(location.search).has('device')
 
 // The reference conversation is still available as a demo with `?demo`.
 const demo = new URLSearchParams(location.search).has('demo')
@@ -78,7 +68,7 @@ function spokenText(m: Message) {
 }
 
 export default function App() {
-  const simulated = useSimulated()
+  const simulated = simulatedDevice
   const [messages, setMessages] = useState<Message[]>(() => (demo ? seedConversation() : []))
   const [title, setTitle] = useState(demo ? '2bhk house for rent' : DEFAULT_TITLE)
   const [place, setPlace] = useState(demo ? 'Indiranagar' : DEFAULT_PLACE)
