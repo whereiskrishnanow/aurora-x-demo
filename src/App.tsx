@@ -758,7 +758,7 @@ export default function App() {
               specular={1}
               tint="rgba(255, 255, 255, 0.4)"
               interactive
-              aria-label={menuSearch ? 'Hide search' : 'Search recent searches'}
+              aria-label={menuSearch ? 'Hide search' : 'Search chats'}
               aria-pressed={menuSearch}
               onClick={() => {
                 const next = !menuSearch
@@ -794,8 +794,8 @@ export default function App() {
               type="search"
               value={menuQuery}
               onChange={(e) => setMenuQuery(e.target.value)}
-              placeholder="Search your searches"
-              aria-label="Search recent searches"
+              placeholder="Search chats"
+              aria-label="Search chats"
               enterKeyHint="search"
             />
           )}
