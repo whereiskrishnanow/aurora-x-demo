@@ -74,7 +74,7 @@ function ResultCard({ r, place, onOpenCall }: { r: Business; place: string; onOp
       <p className="live-detail">{r.detail}</p>
       {/* Aurora's own one-line summary of what this business confirmed. */}
       <div className="live-take">
-        <p>{r.takeaway || r.quote}</p>
+        <p>“{r.takeaway || r.quote}”</p>
       </div>
 
 
