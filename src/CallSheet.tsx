@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 import type { SearchResult } from './chat'
 import { LiquidGlass } from './glass/LiquidGlass'
-import { CALL_NUMBER, callNumber } from './api'
+import { callNumber } from './api'
 import { CloseIcon, LocateIcon, PauseIcon, PhoneIcon } from './icons'
 
 type Business = SearchResult['results'][number]
@@ -247,9 +247,9 @@ export function CallSheet({ business, place, onClose }: { business: Business | n
             </div>
 
             <div className="sheet-actions">
-              <LiquidGlass as="button" type="button" className="sheet-action sheet-call" radius={21} {...glassButton} tint="rgba(255,255,255,0.4)" aria-label={`Call ${CALL_NUMBER}`} onClick={call}>
+              <LiquidGlass as="button" type="button" className="sheet-action sheet-call" radius={21} {...glassButton} tint="rgba(255,255,255,0.4)" aria-label={`Call ${shown.name}`} onClick={call}>
                 <PhoneIcon />
-                Call {CALL_NUMBER}
+                Call
               </LiquidGlass>
               <LiquidGlass as="button" type="button" className="sheet-action" radius={21} {...glassButton} tint="rgba(255,255,255,0.4)" onClick={locate}>
                 <LocateIcon />

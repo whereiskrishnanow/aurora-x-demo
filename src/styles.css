@@ -1640,12 +1640,6 @@ select {
   gap: 6px;
 }
 
-/* The call button carries the number, so it gets the wider share. */
-.sheet-call {
-  flex: 1.8;
-  font-variant-numeric: tabular-nums;
-  white-space: nowrap;
-}
 
 .sheet-toast {
   text-align: center;
