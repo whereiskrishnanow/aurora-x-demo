@@ -78,47 +78,16 @@ export function onTilt(fn: Listener) {
   }
 }
 
+/**
+ * Publishes the resting light. Motion (phone tilt and the desktop pointer)
+ * has been switched off: the glass keeps a fixed top-left light, and no
+ * motion permission is requested. `aim` is kept so motion could return.
+ */
 export function startLight() {
   if (started || typeof window === 'undefined') return
   started = true
   publish()
-
-  let hasGyro = false
-  let base: { gamma: number; beta: number } | null = null
-  const onOrientation = (event: DeviceOrientationEvent) => {
-    if (event.gamma == null || event.beta == null) return
-    hasGyro = true
-    // Swap axes when the phone is held sideways.
-    const angle = (screen.orientation?.angle ?? 0) % 360
-    let gamma = event.gamma
-    let beta = event.beta
-    if (angle === 90) [gamma, beta] = [beta, -gamma]
-    else if (angle === 270 || angle === -90) [gamma, beta] = [-beta, gamma]
-    if (!base) base = { gamma, beta }
-    // The baseline drifts toward how the phone is being held.
-    // Slow drift: a held tilt keeps showing for a few seconds before settling.
-    base.gamma += (gamma - base.gamma) * 0.012
-    base.beta += (beta - base.beta) * 0.012
-    aim((gamma - base.gamma) / RANGE, (beta - base.beta) / RANGE)
-  }
-  window.addEventListener('deviceorientation', onOrientation)
-
-  if (window.matchMedia('(pointer: fine)').matches) {
-    window.addEventListener('pointermove', (event) => {
-      if (hasGyro) return
-      aim((event.clientX / window.innerWidth - 0.5) * 1.4, (event.clientY / window.innerHeight - 0.5) * 1.4)
-    })
-  }
-
-  // iOS asks before sharing motion data, and only from a gesture.
-  const Orientation = window.DeviceOrientationEvent as unknown as {
-    requestPermission?: () => Promise<'granted' | 'denied'>
-  }
-  if (typeof Orientation?.requestPermission === 'function' && window.isSecureContext) {
-    const ask = () => {
-      window.removeEventListener('touchend', ask)
-      Orientation.requestPermission!().catch(() => undefined)
-    }
-    window.addEventListener('touchend', ask)
-  }
 }
+
+/** Not used while motion is off; kept for re-enabling it later. */
+export const steer = aim
