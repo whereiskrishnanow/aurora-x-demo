@@ -1354,6 +1354,7 @@ select {
   flex: none;
   display: grid;
   place-items: center;
+  overflow: hidden;
   width: 36px;
   height: 36px;
   border-radius: 11px;
@@ -1926,4 +1927,18 @@ select {
 
 .tool.active {
   color: #1d9e75;
+}
+
+.live-thumb img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  animation: thumb-in 0.3s ease both;
+}
+
+@keyframes thumb-in {
+  from {
+    opacity: 0;
+  }
 }

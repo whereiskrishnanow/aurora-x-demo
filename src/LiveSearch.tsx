@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react'
+import { photoFor } from './thumbs'
 import type { SearchResult } from './chat'
 import { LiquidGlass } from './glass/LiquidGlass'
 import { CALL_NUMBER, callNumber } from './api'
@@ -32,8 +33,12 @@ const THUMB_COLORS = [
   ['#7dd3fc', '#0e7490'],
 ]
 
-/** A small tile with the business's initials (demo businesses have no photos). */
-function Thumb({ name }: { name: string }) {
+/**
+ * A small photo for the business: a real category photo (the businesses are
+ * fictional), falling back to an initials tile if the photo can't load.
+ */
+function Thumb({ name, brief }: { name: string; brief: string }) {
+  const [failed, setFailed] = useState(false)
   let hash = 0
   for (const ch of name) hash = (hash * 31 + ch.charCodeAt(0)) >>> 0
   const [from, to] = THUMB_COLORS[hash % THUMB_COLORS.length]
@@ -46,12 +51,26 @@ function Thumb({ name }: { name: string }) {
     .join('')
   return (
     <span className="live-thumb" style={{ background: `linear-gradient(140deg, ${from}, ${to})` }} aria-hidden="true">
-      {initials}
+      {failed ? (
+        initials
+      ) : (
+        <img src={photoFor(brief, name)} alt="" loading="lazy" decoding="async" referrerPolicy="no-referrer" onError={() => setFailed(true)} />
+      )}
     </span>
   )
 }
 
-function ResultCard({ r, place, onOpenCall }: { r: Business; place: string; onOpenCall: (r: Business) => void }) {
+function ResultCard({
+  r,
+  place,
+  brief,
+  onOpenCall,
+}: {
+  r: Business
+  place: string
+  brief: string
+  onOpenCall: (r: Business) => void
+}) {
 
   const call = callNumber
   // Demo businesses have no address, so show the area they'd be in.
@@ -63,7 +82,7 @@ function ResultCard({ r, place, onOpenCall }: { r: Business; place: string; onOp
   return (
     <article className="live-card">
       <div className="live-card-top">
-        <Thumb name={r.name} />
+        <Thumb name={r.name} brief={brief} />
         <h4>{r.name}</h4>
         {r.badge && <span className="live-badge">{r.badge}</span>}
       </div>
@@ -105,11 +124,14 @@ export function LiveSearch({
   result,
   failed,
   place = '',
+  brief = '',
   onOpenCall,
 }: {
   result?: SearchResult
   failed?: string
   place?: string
+  /** what was searched for, to pick fitting photos */
+  brief?: string
   onOpenCall: (r: Business) => void
 }) {
   const [now, setNow] = useState(() => performance.now())
@@ -181,7 +203,7 @@ export function LiveSearch({
       {result && (
         <div className="live-results">
           {result.results.slice(0, shown).map((r) => (
-            <ResultCard key={r.name} r={r} place={place} onOpenCall={onOpenCall} />
+            <ResultCard key={r.name} r={r} place={place} brief={brief} onOpenCall={onOpenCall} />
           ))}
         </div>
       )}
