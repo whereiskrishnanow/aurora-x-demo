@@ -159,9 +159,9 @@ export function LiveSearch({
           <LiquidGlass
             className="live-bar"
             contentClassName="live-bar-body"
-            radius={8}
-            bezel={6}
-            thickness={6}
+            radius={5}
+            bezel={4}
+            thickness={4}
             blur={0.5}
             aberration={0.12}
             specular={1}
