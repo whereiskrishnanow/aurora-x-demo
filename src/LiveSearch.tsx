@@ -1,7 +1,6 @@
 import { useEffect, useState } from 'react'
 import type { SearchResult } from './chat'
 import { LiquidGlass } from './glass/LiquidGlass'
-import brandRibbon from './assets/brand-ribbon.png'
 import { CALL_NUMBER, callNumber } from './api'
 import { LocateIcon, PhoneIcon } from './icons'
 
@@ -75,11 +74,7 @@ function ResultCard({ r, place, onOpenCall }: { r: Business; place: string; onOp
       <p className="live-detail">{r.detail}</p>
       {/* Aurora's own one-line summary of what this business confirmed. */}
       <div className="live-take">
-        <img src={brandRibbon} alt="" width={16} height={11} />
-        <p>
-          <b>Aurora</b>
-          {r.takeaway || r.quote}
-        </p>
+        <p>{r.takeaway || r.quote}</p>
       </div>
 
 
