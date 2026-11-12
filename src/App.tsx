@@ -10,7 +10,8 @@ import { VoiceStrings } from './VoiceStrings'
 import brandRibbon from './assets/brand-ribbon.png'
 import { RECENT_SEARCHES, nextId, seedConversation, type Message } from './chat'
 import { ChatError, runSearch, streamReply } from './ai'
-import { LiveSearch } from './LiveSearch'
+import { LiveSearch, type Business } from './LiveSearch'
+import { CallSheet } from './CallSheet'
 import {
   ArrowUpIcon,
   CheckIcon,
@@ -106,6 +107,7 @@ export default function App() {
   const [typing, setTyping] = useState(false)
   const [draft, setDraft] = useState('')
   const [menuOpen, setMenuOpen] = useState(false)
+  const [callFor, setCallFor] = useState<Business | null>(null)
   const scrollRef = useRef<HTMLDivElement>(null)
   const inputRef = useRef<HTMLInputElement>(null)
   const keyboardOpen = useKeyboardOpen()
@@ -395,7 +397,7 @@ export default function App() {
               if (m.kind === 'search') {
                 return (
                   <div key={m.id} className={rowClass(m, 'search')}>
-                    <LiveSearch result={m.result} failed={m.failed} place={place} />
+                    <LiveSearch result={m.result} failed={m.failed} place={place} onOpenCall={setCallFor} />
                   </div>
                 )
               }
@@ -644,6 +646,9 @@ export default function App() {
             )}
           </LiquidGlass>
         )}
+
+        {/* ---------- call sheet ---------- */}
+        <CallSheet business={callFor} place={place} onClose={() => setCallFor(null)} />
 
         {/* ---------- menu sheet ---------- */}
         <div className={`scrim${menuOpen ? ' open' : ''}`} onClick={() => setMenuOpen(false)} />

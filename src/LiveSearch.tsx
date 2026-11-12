@@ -8,7 +8,7 @@ import { LocateIcon, PhoneIcon } from './icons'
  * confirmed results slide in one by one. Results are simulated in this
  * prototype, and the card says so.
  */
-type Business = SearchResult['results'][number]
+export type Business = SearchResult['results'][number]
 
 /** Shared look for the small glass buttons on a result card. */
 const glass = {
@@ -21,8 +21,7 @@ const glass = {
   interactive: true,
 } as const
 
-function ResultCard({ r, place }: { r: Business; place: string }) {
-  const [open, setOpen] = useState(false)
+function ResultCard({ r, place, onOpenCall }: { r: Business; place: string; onOpenCall: (r: Business) => void }) {
   const [note, setNote] = useState('')
 
   const call = () => {
@@ -48,17 +47,6 @@ function ResultCard({ r, place }: { r: Business; place: string }) {
       <p className="live-detail">{r.detail}</p>
       <p className="live-quote">“{r.quote}”</p>
 
-      {open && (
-        <div className="call-info">
-          <p className="call-info-head">Call · {r.duration ?? '1:30'} · simulated</p>
-          {(r.transcript ?? [{ speaker: 'Business', text: r.quote }]).map((line, i) => (
-            <p key={i} className={`call-line ${line.speaker === 'Aurora' ? 'agent' : 'business'}`}>
-              <b>{line.speaker === 'Aurora' ? 'Aurora' : 'Business'}</b>
-              {line.text}
-            </p>
-          ))}
-        </div>
-      )}
 
       <div className="live-actions">
         <LiquidGlass
@@ -67,10 +55,10 @@ function ResultCard({ r, place }: { r: Business; place: string }) {
           className="live-action live-info"
           radius={17}
           {...glass}
-          aria-expanded={open}
-          onClick={() => setOpen((v) => !v)}
+          aria-haspopup="dialog"
+          onClick={() => onOpenCall(r)}
         >
-          {open ? 'Hide call info' : 'View call info'}
+          View call info
         </LiquidGlass>
         <LiquidGlass as="button" type="button" className="live-action live-icon" radius={17} {...glass} aria-label={`Call ${r.name}`} onClick={call}>
           <PhoneIcon />
@@ -84,7 +72,17 @@ function ResultCard({ r, place }: { r: Business; place: string }) {
   )
 }
 
-export function LiveSearch({ result, failed, place = '' }: { result?: SearchResult; failed?: string; place?: string }) {
+export function LiveSearch({
+  result,
+  failed,
+  place = '',
+  onOpenCall,
+}: {
+  result?: SearchResult
+  failed?: string
+  place?: string
+  onOpenCall: (r: Business) => void
+}) {
   const [now, setNow] = useState(() => performance.now())
   const [startedAt] = useState(() => performance.now())
   const [doneAt, setDoneAt] = useState<number | null>(null)
@@ -139,7 +137,7 @@ export function LiveSearch({ result, failed, place = '' }: { result?: SearchResu
       {result && (
         <div className="live-results">
           {result.results.slice(0, shown).map((r) => (
-            <ResultCard key={r.name} r={r} place={place} />
+            <ResultCard key={r.name} r={r} place={place} onOpenCall={onOpenCall} />
           ))}
         </div>
       )}
