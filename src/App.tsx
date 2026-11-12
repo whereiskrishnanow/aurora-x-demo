@@ -12,6 +12,7 @@ import { RECENT_SEARCHES, nextId, seedConversation, type Message } from './chat'
 import { ChatError, runSearch, streamReply } from './ai'
 import { LiveSearch, type Business } from './LiveSearch'
 import { CallSheet } from './CallSheet'
+import { listSearches, saveSearch, type SavedSearch } from './db'
 import {
   ArrowUpIcon,
   CheckIcon,
@@ -103,6 +104,11 @@ export default function App() {
   const [place, setPlace] = useState(demo ? 'Indiranagar' : DEFAULT_PLACE)
   const placeRef = useRef(place)
   placeRef.current = place
+  const titleRef = useRef(title)
+  titleRef.current = title
+  /** saved searches from Supabase; null until loaded or if storage isn't available */
+  const [saved, setSaved] = useState<SavedSearch[] | null>(null)
+  const [openSavedId, setOpenSavedId] = useState<string | null>(null)
   const [awaitingBrief, setAwaitingBrief] = useState(!demo)
   const [typing, setTyping] = useState(false)
   const [draft, setDraft] = useState('')
@@ -242,6 +248,19 @@ export default function App() {
       const result = await runSearch(brief, controller.signal, placeRef.current)
       if (controller.signal.aborted) return
       setMessages((all) => all.map((m) => (m.id === id && m.kind === 'search' ? { ...m, result } : m)))
+      // Keep it in Recent searches.
+      const query = [...messagesRef.current].reverse().find((m) => m.kind === 'user')
+      saveSearch({
+        title: titleRef.current || brief.slice(0, 60),
+        place: placeRef.current,
+        query: query && query.kind === 'user' ? query.text : '',
+        brief,
+        result,
+      }).then((row) => {
+        if (!row) return
+        setSaved((list) => [row, ...(list ?? []).filter((x) => x.id !== row.id)])
+        setOpenSavedId(row.id)
+      })
       // The summary follows once the result cards have slid in.
       window.setTimeout(() => {
         if (controller.signal.aborted) return
@@ -255,6 +274,41 @@ export default function App() {
       setMessages((all) => all.map((m) => (m.id === id && m.kind === 'search' ? { ...m, failed } : m)))
     }
   }
+
+  /** Reopen a saved search: the question, its results and the summary. */
+  const openSaved = (item: SavedSearch) => {
+    aiRequest.current?.abort()
+    searchRequest.current?.abort()
+    voice.exit()
+    const restored: Message[] = []
+    if (item.query) restored.push({ id: nextId(), kind: 'user', text: item.query })
+    if (item.result) {
+      restored.push({ id: nextId(), kind: 'search', brief: item.brief ?? '', result: item.result })
+      restored.push({ id: nextId(), kind: 'assistant', text: item.result.summary })
+    }
+    settled.current = new Set(restored.map((m) => m.id))
+    setTyping(false)
+    setBusy(false)
+    setDraft('')
+    setTitle(item.title)
+    setPlace(item.place || DEFAULT_PLACE)
+    setAwaitingBrief(false)
+    setMessages(restored)
+    setOpenSavedId(item.id)
+    setMenuOpen(false)
+  }
+
+  // Load saved searches whenever the menu opens.
+  useEffect(() => {
+    if (!menuOpen) return
+    let live = true
+    listSearches().then((list) => {
+      if (live && list) setSaved(list)
+    })
+    return () => {
+      live = false
+    }
+  }, [menuOpen])
 
   const choose = (messageId: number, option: string) => {
     if (busy) return
@@ -313,6 +367,7 @@ export default function App() {
   }
 
   const newChat = () => {
+    setOpenSavedId(null)
     aiRequest.current?.abort()
     searchRequest.current?.abort()
     voice.exit()
@@ -678,13 +733,22 @@ export default function App() {
           </div>
           <h2 className="drawer-title">Recent searches</h2>
           <ul>
-            {RECENT_SEARCHES.map((item, index) => (
-              <li key={item.title}>
-                <button type="button" className={index === 0 ? 'current' : ''} onClick={() => setMenuOpen(false)}>
-                  <span>{item.title}</span>
-                </button>
-              </li>
-            ))}
+            {saved && saved.length > 0
+              ? saved.map((item) => (
+                  <li key={item.id}>
+                    <button type="button" className={item.id === openSavedId ? 'current' : ''} onClick={() => openSaved(item)}>
+                      <span>{item.title}</span>
+                    </button>
+                  </li>
+                ))
+              : // Until you've searched (or if storage is unavailable), show examples.
+                RECENT_SEARCHES.map((item, index) => (
+                  <li key={item.title}>
+                    <button type="button" className={index === 0 ? 'current' : ''} onClick={() => setMenuOpen(false)}>
+                      <span>{item.title}</span>
+                    </button>
+                  </li>
+                ))}
           </ul>
           <LiquidGlass
             as="button"
