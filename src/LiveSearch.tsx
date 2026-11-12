@@ -22,6 +22,35 @@ const glass = {
   interactive: true,
 } as const
 
+/** Gradient pairs from the app's palette; each business gets one by its name. */
+const THUMB_COLORS = [
+  ['#14b8a6', '#0e7490'],
+  ['#1d9e75', '#14532d'],
+  ['#38bdf8', '#1d4ed8'],
+  ['#5eead4', '#0f766e'],
+  ['#86efac', '#15803d'],
+  ['#7dd3fc', '#0e7490'],
+]
+
+/** A small tile with the business's initials (demo businesses have no photos). */
+function Thumb({ name }: { name: string }) {
+  let hash = 0
+  for (const ch of name) hash = (hash * 31 + ch.charCodeAt(0)) >>> 0
+  const [from, to] = THUMB_COLORS[hash % THUMB_COLORS.length]
+  const initials = name
+    .replace(/&/g, ' ')
+    .split(/\s+/)
+    .filter((w) => /^[A-Za-z]/.test(w) && !/^(the|and|of)$/i.test(w))
+    .slice(0, 2)
+    .map((w) => w[0].toUpperCase())
+    .join('')
+  return (
+    <span className="live-thumb" style={{ background: `linear-gradient(140deg, ${from}, ${to})` }} aria-hidden="true">
+      {initials}
+    </span>
+  )
+}
+
 function ResultCard({ r, place, onOpenCall }: { r: Business; place: string; onOpenCall: (r: Business) => void }) {
 
   const call = callNumber
@@ -34,6 +63,7 @@ function ResultCard({ r, place, onOpenCall }: { r: Business; place: string; onOp
   return (
     <article className="live-card">
       <div className="live-card-top">
+        <Thumb name={r.name} />
         <h4>{r.name}</h4>
         {r.badge && <span className="live-badge">{r.badge}</span>}
       </div>
