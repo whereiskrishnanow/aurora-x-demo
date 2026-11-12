@@ -1175,36 +1175,11 @@ select {
   color: #6b6b6b;
 }
 
-/* Blurred light pools that follow the voice. */
-.voice-glow {
-  position: relative;
+/* Gradient strings that follow the voice. */
+.voice-strings {
   flex: 1;
   min-width: 0;
-  height: 34px;
-  border-radius: 17px;
-  overflow: hidden;
-  -webkit-mask-image: linear-gradient(90deg, transparent, #000 14%, #000 86%, transparent);
-  mask-image: linear-gradient(90deg, transparent, #000 14%, #000 86%, transparent);
-}
-
-.voice-glow-field {
-  position: absolute;
-  inset: -6px 0;
-  filter: blur(9px) saturate(120%);
-}
-
-.voice-glow-field span {
-  position: absolute;
-  top: 0;
-  left: 0;
-  height: 100%;
-  border-radius: 50%;
-  will-change: transform, opacity;
-}
-
-.voice-glow.paused .voice-glow-field {
-  filter: blur(9px) saturate(40%);
-  transition: filter 0.4s ease;
+  height: 36px;
 }
 
 .dictation-time {

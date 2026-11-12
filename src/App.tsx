@@ -6,7 +6,7 @@ import { VoiceAurora } from './VoiceAurora'
 import { useVoiceMode } from './useVoiceMode'
 import { useKeyboardOpen } from './useKeyboardOpen'
 import { useDictation } from './useDictation'
-import { VoiceGlow } from './VoiceGlow'
+import { VoiceStrings } from './VoiceStrings'
 import brandRibbon from './assets/brand-ribbon.png'
 import { LISTINGS, RECENT_SEARCHES, nextId, seedConversation, type Message } from './chat'
 import { ChatError, streamReply } from './ai'
@@ -512,7 +512,7 @@ export default function App() {
                   <button type="button" className="tool dictation-cancel" aria-label="Cancel dictation" onClick={dictation.cancel}>
                     <CloseIcon />
                   </button>
-                  <VoiceGlow running={dictation.status === 'recording'} />
+                  <VoiceStrings running={dictation.status === 'recording'} />
                   <span className="dictation-time">
                     {Math.floor(dictation.elapsed / 60000)}:{String(Math.floor(dictation.elapsed / 1000) % 60).padStart(2, '0')}
                   </span>

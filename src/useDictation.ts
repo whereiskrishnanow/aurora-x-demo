@@ -25,6 +25,7 @@ interface Recognition {
   onerror: ((event: { error: string }) => void) | null
   onend: (() => void) | null
   onsoundstart?: (() => void) | null
+  onaudiostart?: (() => void) | null
   onspeechstart?: (() => void) | null
   onspeechend?: (() => void) | null
   onsoundend?: (() => void) | null
@@ -56,6 +57,35 @@ export function useDictation() {
     else voiceLevel.releaseMic()
   }
   const clock = useRef({ startedAt: 0, banked: 0, timer: 0 })
+  /** whether the speech engine has actually opened the microphone this run */
+  const audioStarted = useRef(false)
+  /** sessions in a row that ended without ever getting audio */
+  const deadSessions = useRef(0)
+  const watchdog = useRef(0)
+
+  /** Stop with a message; nothing more will come of retrying. */
+  const fail = (message: string) => {
+    setError(message)
+    statusRef.current = 'paused'
+    setStatus('paused')
+    clearInterval(clock.current.timer)
+    clearTimeout(watchdog.current)
+    voiceLevel.reset()
+    holdMic(false)
+    stopRecognition()
+  }
+  const NOT_STARTING =
+    'Speech-to-text didn’t start in this browser. Open the app in Chrome or Safari and allow the microphone.'
+
+  /** Speech engines can fail silently (no error, no audio): notice and say so. */
+  const armWatchdog = () => {
+    clearTimeout(watchdog.current)
+    audioStarted.current = false
+    deadSessions.current = 0
+    watchdog.current = window.setTimeout(() => {
+      if (statusRef.current === 'recording' && !audioStarted.current) fail(NOT_STARTING)
+    }, 5000)
+  }
 
   const publish = () => {
     const settled = `${kept.current}${session.current.settled}`
@@ -94,6 +124,13 @@ export function useDictation() {
       session.current = { settled, partial }
       publish()
     }
+    rec.onaudiostart = () => {
+      audioStarted.current = true
+      deadSessions.current = 0
+      clearTimeout(watchdog.current)
+      // Only now, with the speech engine holding the mic, add the level meter.
+      holdMic(true)
+    }
     rec.onspeechstart = () => voiceLevel.start()
     rec.onspeechend = () => voiceLevel.stop()
     rec.onsoundend = () => voiceLevel.stop()
@@ -104,15 +141,7 @@ export function useDictation() {
         'audio-capture': 'No microphone was found, or another app is using it.',
         network: 'Couldn’t reach the speech service. Check your connection and try again.',
       }
-      if (messages[event.error]) {
-        setError(messages[event.error])
-        // Nothing will come of retrying these: stop instead of looping.
-        statusRef.current = 'paused'
-        setStatus('paused')
-        clearInterval(clock.current.timer)
-        voiceLevel.reset()
-        holdMic(false)
-      }
+      if (messages[event.error]) fail(messages[event.error])
     }
     rec.onend = () => {
       // Keep what was heard; if still recording, the browser just timed out, so carry on.
@@ -121,7 +150,10 @@ export function useDictation() {
       session.current = { settled: '', partial: '' }
       publish()
       recognition.current = null
-      if (statusRef.current === 'recording') setTimeout(() => statusRef.current === 'recording' && startRecognition(), 150)
+      if (statusRef.current !== 'recording') return
+      // Sessions that end before any audio, again and again, mean it isn't working.
+      if (!audioStarted.current && ++deadSessions.current >= 3) return fail(NOT_STARTING)
+      setTimeout(() => statusRef.current === 'recording' && startRecognition(), 150)
     }
     try {
       rec.start()
@@ -152,8 +184,8 @@ export function useDictation() {
     clock.current.startedAt = performance.now()
     setElapsed(0)
     setStatusBoth('recording')
+    armWatchdog()
     startRecognition()
-    holdMic(true)
     tickClock()
   }, []) // eslint-disable-line react-hooks/exhaustive-deps
 
@@ -179,8 +211,8 @@ export function useDictation() {
     setError('')
     setStatusBoth('recording')
     clock.current.startedAt = performance.now()
+    armWatchdog()
     startRecognition()
-    holdMic(true)
     tickClock()
   }, []) // eslint-disable-line react-hooks/exhaustive-deps
 
