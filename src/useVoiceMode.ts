@@ -56,11 +56,15 @@ export interface LiveText {
 const EMPTY_LIVE: LiveText = { settled: '', partial: '' }
 
 /** Silence that ends the user's turn. */
-const PAUSE_MS = 1100
+const PAUSE_MS = 900
 
 export interface SpeakItem {
   id: number
   text: string
+  /** where this piece starts within the message's text (for streamed replies) */
+  offset?: number
+  /** the message's final piece: once spoken, the whole message (and its chips) shows */
+  last?: boolean
 }
 
 export function useVoiceMode(onFinal: (text: string) => void) {
@@ -79,6 +83,8 @@ export function useVoiceMode(onFinal: (text: string) => void) {
   const queue = useRef<SpeakItem[]>([])
   const generation = useRef(0) // bumps on exit so stale callbacks do nothing
   const timers = useRef<number[]>([])
+  /** replies still streaming in: wait for their next sentence rather than listening */
+  const streaming = useRef(new Set<number>())
   const pauseTimer = useRef(0)
   const onFinalRef = useRef(onFinal)
   onFinalRef.current = onFinal
@@ -186,6 +192,8 @@ export function useVoiceMode(onFinal: (text: string) => void) {
     const item = queue.current.shift()
     if (!item) {
       speaking.current = false
+      // More of a reply is still on its way: hold, don't start listening.
+      if (streaming.current.size > 0) return
       setPhase(mutedRef.current ? 'idle' : 'listening')
       listen()
       return
@@ -194,25 +202,29 @@ export function useVoiceMode(onFinal: (text: string) => void) {
     setPhase('speaking')
 
     const text = item.text
+    const offset = item.offset ?? 0
+    const last = item.last ?? true
     const showAll = () => {
+      if (last) streaming.current.delete(item.id)
       setRevealed((prev) => {
         const copy = { ...prev }
-        delete copy[item.id]
+        if (last) delete copy[item.id]
+        else copy[item.id] = Math.max(copy[item.id] ?? 0, offset + text.length)
         return copy
       })
     }
-    if (!text) {
+    if (!text.trim()) {
       showAll()
-      later(next, 350)
+      later(next, last ? 350 : 0)
       return
     }
 
-    setRevealed((prev) => ({ ...prev, [item.id]: 0 }))
+    setRevealed((prev) => ({ ...prev, [item.id]: Math.max(prev[item.id] ?? 0, offset) }))
     const advanceTo = (n: number) =>
       setRevealed((prev) => {
         const current = prev[item.id]
         if (current === undefined) return prev
-        const end = toWordEnd(text, n)
+        const end = offset + toWordEnd(text, n)
         return end > current ? { ...prev, [item.id]: end } : prev
       })
 
@@ -234,7 +246,8 @@ export function useVoiceMode(onFinal: (text: string) => void) {
       clearTimeout(safety)
       if (gen !== generation.current) return
       showAll()
-      later(next, 320)
+      // Sentences of one reply follow on without a pause.
+      later(next, last ? 320 : 0)
     }
     const expected = (text.length / charsPerSecond) * 1000
     const safety = window.setTimeout(finish, expected * 2.2 + 2500)
@@ -277,6 +290,43 @@ export function useVoiceMode(onFinal: (text: string) => void) {
     [next, stopListening],
   )
 
+  /**
+   * A reply is about to stream in: keep it hidden and stop listening. Its
+   * sentences then arrive through `speakPart` as soon as each is complete.
+   */
+  const hold = useCallback(
+    (id: number) => {
+      if (!active.current) return
+      stopListening()
+      streaming.current.add(id)
+      setRevealed((prev) => ({ ...prev, [id]: 0 }))
+    },
+    [stopListening],
+  )
+
+  const speakPart = useCallback(
+    (item: SpeakItem) => {
+      if (!active.current) return
+      queue.current.push(item)
+      if (!speaking.current) next()
+    },
+    [next],
+  )
+
+  /** Give up on a held reply (it failed): show it as is and carry on. */
+  const release = useCallback(
+    (id: number) => {
+      streaming.current.delete(id)
+      setRevealed((prev) => {
+        const copy = { ...prev }
+        delete copy[id]
+        return copy
+      })
+      if (active.current && !speaking.current && queue.current.length === 0) next()
+    },
+    [next],
+  )
+
   const enter = useCallback(() => {
     if (active.current) return
     active.current = true
@@ -295,6 +345,7 @@ export function useVoiceMode(onFinal: (text: string) => void) {
     generation.current += 1
     speaking.current = false
     queue.current = []
+    streaming.current.clear()
     timers.current.forEach(clearTimeout)
     timers.current = []
     stopListening()
@@ -341,6 +392,9 @@ export function useVoiceMode(onFinal: (text: string) => void) {
     exit,
     toggleMute,
     speak,
+    hold,
+    speakPart,
+    release,
     awaitReply,
   }
 }

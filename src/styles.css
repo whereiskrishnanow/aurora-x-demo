@@ -11,7 +11,9 @@
   --composer-height: 87px;
   --safe-top: max(env(safe-area-inset-top), 14px);
   --composer-bottom: calc(max(env(safe-area-inset-bottom), 10px) + 6px);
-  font-family: 'Inter Variable', Inter, -apple-system, system-ui, sans-serif;
+  font-family: 'Inter Variable', 'Inter Display', Inter, -apple-system, system-ui, sans-serif;
+  /* Inter Display: the largest optical size, used everywhere */
+  font-variation-settings: 'opsz' 32;
   color: var(--ink);
   -webkit-font-smoothing: antialiased;
   text-rendering: optimizeLegibility;
@@ -1072,4 +1074,13 @@ ul {
   .voice-dock {
     animation: none;
   }
+}
+
+/* Form controls don't inherit type by default: keep them on Inter Display too. */
+button,
+input,
+textarea,
+select {
+  font-family: inherit;
+  font-variation-settings: inherit;
 }

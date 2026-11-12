@@ -16,9 +16,21 @@ export interface ChatTurn {
 
 export const META_MARK = '@@META'
 
-const MODEL = process.env.GEMINI_MODEL || 'gemini-2.5-flash'
-/** Tried in order when the main model is overloaded or rate-limited. */
-const BACKUP_MODELS = ['gemini-2.5-flash-lite', 'gemini-flash-lite-latest', 'gemini-flash-latest']
+const env = (globalThis as { process?: { env: Record<string, string | undefined> } }).process?.env ?? {}
+
+/**
+ * Fastest first. Each model has its own free-tier quota, so when one is
+ * exhausted or busy the next takes over.
+ */
+const MODELS = [env.GEMINI_MODEL || 'gemini-2.5-flash', 'gemini-flash-lite-latest', 'gemini-flash-latest', 'gemini-3.1-flash-lite']
+
+/**
+ * Models known to be out of quota, retired or overloaded, and until when to
+ * skip them. Lives as long as the server instance, so a warm instance stops
+ * paying a failed round trip on every request.
+ */
+const benched = new Map<string, number>()
+const bench = (model: string, seconds: number) => benched.set(model, Date.now() + seconds * 1000)
 
 /** The model writes "Rs 25K"; people see "₹25K". (Writing ₹ inside JSON trips some models up.) */
 const rupees = (text: string) => text.replace(/\b(?:Rs\.?|INR)\s?(?=\d)/g, '₹')
@@ -106,11 +118,11 @@ export async function handleChat(request: Request, apiKey: string | undefined): 
   // Keep requests small and bounded.
   turns = turns.slice(-24).map((t) => ({ role: t.role, text: t.text.slice(0, 2000) }))
 
-  const ask = (model: string) =>
+  const ask = (model: string, signal: AbortSignal) =>
     fetch(`https://generativelanguage.googleapis.com/v1beta/models/${model}:streamGenerateContent?alt=sse`, {
       method: 'POST',
       headers: { 'content-type': 'application/json', 'x-goog-api-key': apiKey },
-      signal: request.signal,
+      signal,
       body: JSON.stringify({
         systemInstruction: {
           parts: [{ text: `${SYSTEM}\n\nThe area shown in the app right now: ${place || 'not set'}.` }],
@@ -118,7 +130,7 @@ export async function handleChat(request: Request, apiKey: string | undefined): 
         contents: turns.map((t) => ({ role: t.role === 'assistant' ? 'model' : 'user', parts: [{ text: t.text }] })),
         generationConfig: {
           temperature: 0.6,
-          maxOutputTokens: 450,
+          maxOutputTokens: 400,
           // Replies are short and conversational: answer fast rather than think long.
           thinkingConfig: model.startsWith('gemini-2') ? { thinkingBudget: 0 } : { thinkingLevel: 'low' },
           responseMimeType: 'application/json',
@@ -127,22 +139,126 @@ export async function handleChat(request: Request, apiKey: string | undefined): 
       }),
     })
 
-  let upstream: Response | null = null
-  for (const model of [MODEL, ...BACKUP_MODELS]) {
-    upstream = await ask(model)
-    if (upstream.ok && upstream.body) break
-    const detail = await upstream.text().catch(() => '')
-    console.error(`[api/chat] ${model} ${upstream.status}: ${detail.slice(0, 200)}`)
-    // Each model has its own quota: on limits, overload or a model this key
-    // can't reach, try the next one. Bad requests or a bad key won't improve.
-    if ([400, 401, 403].includes(upstream.status)) break
+  /** Why a model failed, and how long to leave it alone. */
+  const sideline = (model: string, status: number, detail: string) => {
+    console.error(`[api/chat] ${model} ${status}: ${detail.slice(0, 160)}`)
+    const retry = Number(detail.match(/"retryDelay":\s*"(\d+)s"/)?.[1] ?? 0)
+    if (status === 429) bench(model, Math.min(Math.max(retry, 60), 30 * 60))
+    else if (status === 404) bench(model, 6 * 60 * 60) // retired or unavailable to this key
+    else if (status >= 500) bench(model, 30) // overloaded: brief rest
   }
-  if (!upstream || !upstream.ok || !upstream.body) {
-    const limited = upstream?.status === 429 || upstream?.status === 404
+
+  type Outcome = { ok: true; body: ReadableStream<Uint8Array>; stop: () => void } | { ok: false; status: number }
+
+  /** One model, up to its first real event (a busy model can say so inside a 200). */
+  const attempt = async (model: string, controller: AbortController): Promise<Outcome> => {
+    try {
+      const upstream = await ask(model, controller.signal)
+      if (!upstream.ok || !upstream.body) {
+        sideline(model, upstream.status, await upstream.text().catch(() => ''))
+        return { ok: false, status: upstream.status }
+      }
+      const reader = upstream.body.getReader()
+      const head: Uint8Array[] = []
+      const peek = new TextDecoder()
+      let seen = ''
+      while (!/^data:.*\n/m.test(seen)) {
+        const { done, value } = await reader.read()
+        if (done) break
+        head.push(value)
+        seen += peek.decode(value, { stream: true })
+      }
+      if (/^data:\s*\{\s*"error"/m.test(seen) || seen.trim() === '') {
+        reader.cancel().catch(() => undefined)
+        const status = Number(seen.match(/"code":\s*(\d+)/)?.[1] ?? 503)
+        sideline(model, status, seen)
+        return { ok: false, status }
+      }
+      const body = new ReadableStream<Uint8Array>({
+        start(c) {
+          head.forEach((chunk) => c.enqueue(chunk))
+        },
+        async pull(c) {
+          const { done, value } = await reader.read()
+          if (done) c.close()
+          else c.enqueue(value)
+        },
+        cancel() {
+          reader.cancel().catch(() => undefined)
+        },
+      })
+      return { ok: true, body, stop: () => controller.abort() }
+    } catch {
+      return { ok: false, status: controller.signal.aborted ? 499 : 503 }
+    }
+  }
+
+  /*
+   * Staggered race: start the fastest model; if it hasn't begun answering
+   * within HEDGE_MS (or fails), start the next one too. The first to answer
+   * wins and the others are cancelled. Slow requests cost one extra call;
+   * normal ones cost nothing extra.
+   */
+  const HEDGE_MS = 2500
+  const now = Date.now()
+  const available = MODELS.filter((m) => (benched.get(m) ?? 0) <= now)
+  const queue = available.length ? available : MODELS
+  const controllers: AbortController[] = []
+  request.signal.addEventListener('abort', () => controllers.forEach((c) => c.abort()))
+
+  let lastStatus = 0
+  const winner = await new Promise<Extract<Outcome, { ok: true }> | null>((resolve) => {
+    let next = 0
+    let running = 0
+    let settled = false
+    let timer: ReturnType<typeof setTimeout> | undefined
+    const launch = () => {
+      if (settled || next >= queue.length) {
+        if (!settled && running === 0) {
+          settled = true
+          resolve(null)
+        }
+        return
+      }
+      const controller = new AbortController()
+      controllers.push(controller)
+      running += 1
+      clearTimeout(timer)
+      timer = setTimeout(launch, HEDGE_MS)
+      attempt(queue[next++], controller).then((outcome) => {
+        running -= 1
+        if (settled) {
+          if (outcome.ok) outcome.stop()
+          return
+        }
+        if (outcome.ok) {
+          settled = true
+          clearTimeout(timer)
+          controllers.forEach((c) => c !== controller && c.abort())
+          resolve(outcome)
+          return
+        }
+        lastStatus = outcome.status
+        if ([400, 401, 403].includes(outcome.status)) {
+          settled = true // a bad request or key won't improve on another model
+          clearTimeout(timer)
+          controllers.forEach((c) => c.abort())
+          resolve(null)
+          return
+        }
+        launch() // failed fast: don't wait for the hedge timer
+      })
+    }
+    launch()
+  })
+  const body = winner?.body ?? null
+
+  if (!body) {
+    const limited = lastStatus === 429 || lastStatus === 404 || lastStatus === 503
     return json(limited ? 429 : 502, {
       error: limited
         ? 'The assistant has reached its usage limit for now. Please try again later.'
-        : `The AI service returned ${upstream?.status ?? 'nothing'}`,
+        : `The AI service returned ${lastStatus || 'nothing'}`,
       code: limited ? 'limit' : 'upstream',
     })
   }
@@ -155,7 +271,7 @@ export async function handleChat(request: Request, apiKey: string | undefined): 
   let sent = 0
   // Hold back a few characters so "Rs 1" can still become "₹1" before it is sent.
   const HOLD = 4
-  const stream = upstream.body.pipeThrough(
+  const stream = body.pipeThrough(
     new TransformStream<Uint8Array, Uint8Array>({
       transform(chunk, controller) {
         buffer += decoder.decode(chunk, { stream: true })

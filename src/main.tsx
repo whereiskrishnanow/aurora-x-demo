@@ -1,6 +1,7 @@
 import { StrictMode } from 'react'
 import { createRoot } from 'react-dom/client'
-import '@fontsource-variable/inter'
+// Inter with the optical-size axis, so it can be set to its Display cut.
+import '@fontsource-variable/inter/opsz.css'
 import './styles.css'
 import App from './App'
 

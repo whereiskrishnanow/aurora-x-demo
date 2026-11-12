@@ -116,27 +116,53 @@ export default function App() {
     const id = nextId()
     const speakAloud = voice.isActive()
     let streaming = false
+    /** voice mode: how much of the reply has been handed to the voice */
+    let spokenUpTo = 0
     setBusy(true)
     setTyping(true)
+
+    /** Hand each finished sentence to the voice as soon as it arrives. */
+    const speakSentences = (text: string) => {
+      const pattern = /[.!?…](?=\s)/g
+      pattern.lastIndex = spokenUpTo
+      let match: RegExpExecArray | null
+      let end = spokenUpTo
+      while ((match = pattern.exec(text))) end = match.index + 1
+      if (end > spokenUpTo) {
+        voice.speakPart({ id, text: text.slice(spokenUpTo, end), offset: spokenUpTo, last: false })
+        spokenUpTo = end
+      }
+    }
 
     const finish = (final: Message[]) => {
       settled.current!.add(id) // already on screen: don't replay its entrance
       setTyping(false)
       setBusy(false)
       setMessages((all) => [...all.filter((m) => m.id !== id), ...final])
-      if (speakAloud && voice.isActive()) voice.speak(final.map((m) => ({ id: m.id, text: spokenText(m) })))
+      if (!speakAloud || !voice.isActive()) return
+      const [reply, ...extra] = final
+      if (streaming) {
+        // Speak whatever is left of the reply, then reveal what follows it.
+        const text = spokenText(reply)
+        voice.speakPart({ id, text: text.slice(spokenUpTo), offset: spokenUpTo, last: true })
+        if (extra.length) voice.speak(extra.map((m) => ({ id: m.id, text: spokenText(m) })))
+      } else {
+        voice.speak(final.map((m) => ({ id: m.id, text: spokenText(m) })))
+      }
     }
 
     try {
       const { text, meta } = await streamReply(history, placeRef.current, controller.signal, (partial) => {
-        if (speakAloud) return
         if (!streaming) {
           streaming = true
+          // In voice mode the text stays hidden and appears as it is spoken.
+          if (speakAloud) voice.hold(id)
           setTyping(false)
           setMessages((all) => [...all, { id, kind: 'assistant', text: partial }])
         } else {
           setMessages((all) => all.map((m) => (m.id === id && m.kind === 'assistant' ? { ...m, text: partial } : m)))
         }
+        if (speakAloud) speakSentences(partial)
       })
       if (controller.signal.aborted) return
       if (meta.title) setTitle(meta.title)
@@ -145,6 +171,7 @@ export default function App() {
         meta.chips.length > 0
           ? { id, kind: 'question', question: { key: `ai-${id}`, text, options: meta.chips } }
           : { id, kind: 'assistant', text: text || 'Sorry, I didn’t catch that. Could you say it another way?' }
+      if (!text) spokenUpTo = 0
       const final: Message[] = [reply]
       if (meta.listings) final.push({ id: nextId(), kind: 'listings', listings: LISTINGS })
       finish(final)
@@ -155,6 +182,10 @@ export default function App() {
         error instanceof ChatError && error.limited
           ? 'I’ve hit my usage limit for now, so I can’t reply. Please try again later.'
           : 'I couldn’t reach the assistant just now. Please try again in a moment.'
+      if (streaming && speakAloud) {
+        voice.release(id)
+        streaming = false
+      }
       finish([{ id, kind: 'assistant', text }])
     }
   }
