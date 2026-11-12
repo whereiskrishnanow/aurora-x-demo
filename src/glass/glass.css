@@ -43,6 +43,21 @@
     0 16px 36px rgba(0, 0, 0, 0.05);
 }
 
+/*
+ * A floating shadow that slides as the phone tilts, so the glass reads as
+ * hovering above the page. Drawn by a pseudo-element painted before the glass
+ * layers: an outer shadow never falls inside the box, so the refraction is
+ * untouched, and the root itself never moves.
+ */
+.lg::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  pointer-events: none;
+  box-shadow: calc(var(--lg-tx) * -9px) calc(7px + var(--lg-ty) * -9px) 20px -5px rgba(0, 0, 0, 0.2);
+}
+
 .lg-defs {
   position: absolute;
   width: 0;
@@ -82,8 +97,8 @@
 /* A ring of a given width, cut with a two-layer mask. */
 .lg-light {
   /* The bright side of the rim slides round as the phone tilts. */
-  --lg-cx: calc(50% - var(--lg-tx) * 14%);
-  --lg-cy: calc(50% - var(--lg-ty) * 14%);
+  --lg-cx: calc(50% - var(--lg-tx) * 30%);
+  --lg-cy: calc(50% - var(--lg-ty) * 30%);
 }
 
 .lg-shade,
@@ -113,11 +128,11 @@
   padding: 14px;
   background: conic-gradient(
     from var(--lg-light) at var(--lg-cx) var(--lg-cy),
-    rgba(0, 0, 0, 0.012) 0deg,
-    rgba(0, 0, 0, 0.03) 70deg,
-    rgba(0, 0, 0, 0.085) 180deg,
-    rgba(0, 0, 0, 0.03) 290deg,
-    rgba(0, 0, 0, 0.012) 360deg
+    rgba(0, 0, 0, 0.01) 0deg,
+    rgba(0, 0, 0, 0.04) 70deg,
+    rgba(0, 0, 0, 0.13) 180deg,
+    rgba(0, 0, 0, 0.04) 290deg,
+    rgba(0, 0, 0, 0.01) 360deg
   );
   opacity: var(--lg-shade, 1);
 }
@@ -156,18 +171,30 @@
 
 /* A soft band of reflected light that glides across the glass with the tilt. */
 .lg-sheen {
-  background: linear-gradient(
-    112deg,
-    rgba(255, 255, 255, 0) 30%,
-    rgba(255, 255, 255, 0.28) 45%,
-    rgba(255, 255, 255, 0.42) 50%,
-    rgba(255, 255, 255, 0.28) 55%,
-    rgba(255, 255, 255, 0) 70%
-  );
-  background-size: 260% 100%;
+  /* a glint that slides toward the light, plus a band sweeping across */
+  background:
+    radial-gradient(
+      circle at calc(50% - var(--lg-tx) * 45%) calc(35% - var(--lg-ty) * 45%),
+      rgba(255, 255, 255, 0.85) 0,
+      rgba(255, 255, 255, 0.3) 18%,
+      rgba(255, 255, 255, 0) 42%
+    ),
+    linear-gradient(
+      112deg,
+      rgba(255, 255, 255, 0) 32%,
+      rgba(255, 255, 255, 0.45) 45%,
+      rgba(255, 255, 255, 0.75) 50%,
+      rgba(255, 255, 255, 0.45) 55%,
+      rgba(255, 255, 255, 0) 68%
+    );
+  background-size:
+    100% 100%,
+    260% 100%;
   background-repeat: no-repeat;
-  background-position: calc(50% + var(--lg-tx) * 55%) 0;
-  opacity: calc(var(--lg-spec) * (0.25 + (max(var(--lg-tx), -1 * var(--lg-tx)) + max(var(--lg-ty), -1 * var(--lg-ty))) * 0.45));
+  background-position:
+    0 0,
+    calc(50% + var(--lg-tx) * 90%) 0;
+  opacity: calc(var(--lg-spec) * (0.3 + (max(var(--lg-tx), -1 * var(--lg-tx)) + max(var(--lg-ty), -1 * var(--lg-ty))) * 0.7));
   mix-blend-mode: soft-light;
 }
 
@@ -184,7 +211,7 @@
 .lg-content {
   position: relative;
   /* Content floats inside the glass, so it shifts against the tilt. */
-  translate: calc(var(--lg-tx) * -2px) calc(var(--lg-ty) * -2px);
+  translate: calc(var(--lg-tx) * -4px) calc(var(--lg-ty) * -4px);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -209,6 +236,9 @@
 /* ---------- system settings that alter the material ---------- */
 
 @media (prefers-reduced-motion: reduce) {
+  .lg::before {
+    box-shadow: 0 7px 20px -5px rgba(0, 0, 0, 0.2);
+  }
   .lg-content {
     translate: none;
   }
