@@ -419,7 +419,6 @@ export default function App() {
             <div className={`empty${keyboardOpen ? ' keyboard-open' : ''}`} aria-hidden={keyboardOpen || undefined}>
               <img className="empty-mark" src={brandRibbon} alt="" width={58} height={41} />
               <h2>Just ask and find</h2>
-              <p>What can I do for you today?</p>
             </div>
           )}
           <div className="thread" role="log" aria-live="polite">
