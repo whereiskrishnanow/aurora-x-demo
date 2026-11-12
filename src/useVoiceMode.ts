@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
+import { voiceLevel } from './voiceLevel'
 
 /**
  * Hands-free conversation: listen with the browser's speech recognition,
@@ -19,6 +20,8 @@ interface Recognition {
   onresult: ((event: { results: ArrayLike<RecognitionResult> }) => void) | null
   onerror: ((event: { error: string }) => void) | null
   onend: (() => void) | null
+  onspeechstart?: (() => void) | null
+  onspeechend?: (() => void) | null
   start: () => void
   abort: () => void
 }
@@ -93,7 +96,18 @@ export function useVoiceMode(onFinal: (text: string) => void) {
     timers.current.push(window.setTimeout(fn, ms))
   }
 
+  /** desktop mic meter, held while listening */
+  const micHeld = useRef(false)
+  const holdMic = (on: boolean) => {
+    if (on === micHeld.current) return
+    micHeld.current = on
+    if (on) voiceLevel.useMic()
+    else voiceLevel.releaseMic()
+  }
+
   const stopListening = useCallback(() => {
+    holdMic(false)
+    voiceLevel.stop()
     const rec = recognition.current
     recognition.current = null
     if (rec) {
@@ -136,6 +150,8 @@ export function useVoiceMode(onFinal: (text: string) => void) {
       rec.onend = null
       rec.onresult = null
       rec.onerror = null
+      holdMic(false)
+      voiceLevel.stop()
       rec.abort()
       setInterim(EMPTY_LIVE)
       if (gen !== generation.current || !active.current) return
@@ -143,7 +159,10 @@ export function useVoiceMode(onFinal: (text: string) => void) {
       onFinalRef.current(text)
     }
 
+    rec.onspeechstart = () => voiceLevel.start()
+    rec.onspeechend = () => voiceLevel.stop()
     rec.onresult = (event) => {
+      voiceLevel.word()
       settled = ''
       partial = ''
       for (const result of Array.from(event.results)) {
@@ -182,6 +201,7 @@ export function useVoiceMode(onFinal: (text: string) => void) {
       recognition.current = rec
       setNotice('')
       setPhase('listening')
+      holdMic(true)
     } catch {
       setPhase('idle')
     }
@@ -242,6 +262,7 @@ export function useVoiceMode(onFinal: (text: string) => void) {
     const finish = () => {
       if (done) return
       done = true
+      voiceLevel.stop()
       clearInterval(pacer)
       clearTimeout(safety)
       if (gen !== generation.current) return
@@ -263,9 +284,11 @@ export function useVoiceMode(onFinal: (text: string) => void) {
     utterance.rate = rate
     utterance.onstart = () => {
       started = performance.now()
+      voiceLevel.start()
     }
     utterance.onboundary = (event) => {
       if (event.name && event.name !== 'word') return
+      voiceLevel.word()
       byBoundary = true
       advanceTo(event.charIndex + Math.max(1, event.charLength ?? 1))
     }
@@ -350,6 +373,7 @@ export function useVoiceMode(onFinal: (text: string) => void) {
     timers.current = []
     stopListening()
     synth?.cancel()
+    voiceLevel.reset()
     setRevealed({})
     setNotice('')
     setPhase('off')

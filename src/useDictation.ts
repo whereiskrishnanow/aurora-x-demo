@@ -1,14 +1,14 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
+import { voiceLevel } from './voiceLevel'
 
 /**
  * Dictation for the composer's microphone button, using the browser's speech
  * recognition. Pausing stops it and freezes the timer; resuming carries on
  * adding to the same text.
  *
- * The microphone is used by speech recognition alone. Phones give the mic to
- * one listener at a time, so a second feed for a level meter starved the
- * recogniser of audio. The animation's energy comes from the recogniser's own
- * signals instead: hearing sound, hearing speech, and new words.
+ * The glow follows the shared voice level (see voiceLevel.ts): real mic
+ * loudness on desktop, speech-recognition events on phones, where a second
+ * mic listener would starve the recogniser.
  */
 
 export type DictationStatus = 'off' | 'recording' | 'paused'
@@ -47,8 +47,14 @@ export function useDictation() {
   const kept = useRef('')
   const session = useRef({ settled: '', partial: '' })
   const recognition = useRef<Recognition | null>(null)
-  /** how lively the animation should be, 0..1: quiet, hearing sound, hearing speech */
-  const level = useRef(0)
+  /** the meter (desktop only) is held while recording */
+  const micHeld = useRef(false)
+  const holdMic = (on: boolean) => {
+    if (on === micHeld.current) return
+    micHeld.current = on
+    if (on) voiceLevel.useMic()
+    else voiceLevel.releaseMic()
+  }
   const clock = useRef({ startedAt: 0, banked: 0, timer: 0 })
 
   const publish = () => {
@@ -78,6 +84,7 @@ export function useDictation() {
     rec.continuous = true
     session.current = { settled: '', partial: '' }
     rec.onresult = (event) => {
+      voiceLevel.word()
       let settled = ''
       let partial = ''
       for (const result of Array.from(event.results)) {
@@ -87,10 +94,9 @@ export function useDictation() {
       session.current = { settled, partial }
       publish()
     }
-    rec.onsoundstart = () => (level.current = Math.max(level.current, 0.45))
-    rec.onspeechstart = () => (level.current = 0.8)
-    rec.onspeechend = () => (level.current = 0.25)
-    rec.onsoundend = () => (level.current = 0.12)
+    rec.onspeechstart = () => voiceLevel.start()
+    rec.onspeechend = () => voiceLevel.stop()
+    rec.onsoundend = () => voiceLevel.stop()
     rec.onerror = (event) => {
       const messages: Record<string, string> = {
         'not-allowed': 'Microphone access is blocked. Allow it for this site in your browser settings.',
@@ -104,7 +110,8 @@ export function useDictation() {
         statusRef.current = 'paused'
         setStatus('paused')
         clearInterval(clock.current.timer)
-        level.current = 0
+        voiceLevel.reset()
+        holdMic(false)
       }
     }
     rec.onend = () => {
@@ -119,7 +126,6 @@ export function useDictation() {
     try {
       rec.start()
       recognition.current = rec
-      level.current = Math.max(level.current, 0.18)
     } catch (err) {
       setError(`Couldn’t start the microphone: ${(err as Error).message || 'unknown error'}`)
     }
@@ -147,6 +153,7 @@ export function useDictation() {
     setElapsed(0)
     setStatusBoth('recording')
     startRecognition()
+    holdMic(true)
     tickClock()
   }, []) // eslint-disable-line react-hooks/exhaustive-deps
 
@@ -163,7 +170,8 @@ export function useDictation() {
       rec.onend?.()
       stopRecognition()
     }
-    level.current = 0
+    voiceLevel.reset()
+    holdMic(false)
   }, []) // eslint-disable-line react-hooks/exhaustive-deps
 
   const resume = useCallback(() => {
@@ -172,6 +180,7 @@ export function useDictation() {
     setStatusBoth('recording')
     clock.current.startedAt = performance.now()
     startRecognition()
+    holdMic(true)
     tickClock()
   }, []) // eslint-disable-line react-hooks/exhaustive-deps
 
@@ -181,7 +190,8 @@ export function useDictation() {
     setStatusBoth('off')
     clearInterval(clock.current.timer)
     stopRecognition()
-    level.current = 0
+    voiceLevel.reset()
+    holdMic(false)
     kept.current = ''
     session.current = { settled: '', partial: '' }
     setText({ settled: '', partial: '' })
@@ -194,5 +204,5 @@ export function useDictation() {
 
   useEffect(() => () => void finish(), [finish])
 
-  return { status, text, elapsed, error, level, start, pause, resume, finish, cancel }
+  return { status, text, elapsed, error, start, pause, resume, finish, cancel }
 }
