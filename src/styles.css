@@ -1358,11 +1358,78 @@ select {
   color: #3c3c3c;
 }
 
-.live-called {
-  margin-top: 8px;
-  font-size: 12px;
+/* Actions: one glass pill and two glass icon buttons. */
+.live-actions {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-top: 10px;
+}
+
+.live-action {
+  height: 34px;
+  flex: none;
+  color: #1b1b1b;
+  font-size: 13px;
   font-weight: 600;
+  box-shadow:
+    0 0 0 0.5px rgba(0, 0, 0, 0.1),
+    0 1px 2px rgba(0, 0, 0, 0.06),
+    0 3px 8px rgba(0, 0, 0, 0.06);
+}
+
+.live-info {
+  flex: 1;
+  padding: 0 12px;
+}
+
+.live-icon {
+  width: 34px;
   color: #1d9e75;
+}
+
+.live-icon svg {
+  display: block;
+}
+
+.call-info {
+  margin-top: 10px;
+  padding: 10px;
+  border-radius: 14px;
+  background: #f5f8f7;
+  animation: rise 0.25s ease both;
+}
+
+.call-info-head {
+  margin-bottom: 6px;
+  font-size: 11.5px;
+  font-weight: 600;
+  color: var(--muted);
+}
+
+.call-line {
+  margin-top: 5px;
+  font-size: 12.5px;
+  line-height: 17px;
+  color: #333;
+}
+
+.call-line b {
+  display: block;
+  font-size: 11px;
+  font-weight: 650;
+  color: #1d9e75;
+}
+
+.call-line.business b {
+  color: #5a5a5a;
+}
+
+.live-toast {
+  margin-top: 6px;
+  font-size: 11.5px;
+  color: #8a6a2a;
+  animation: rise 0.2s ease both;
 }
 
 .live-note {

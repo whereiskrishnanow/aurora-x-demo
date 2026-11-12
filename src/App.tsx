@@ -379,7 +379,7 @@ export default function App() {
               if (m.kind === 'search') {
                 return (
                   <div key={m.id} className={rowClass(m, 'search')}>
-                    <LiveSearch result={m.result} failed={m.failed} />
+                    <LiveSearch result={m.result} failed={m.failed} place={place} />
                   </div>
                 )
               }

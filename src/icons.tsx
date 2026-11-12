@@ -67,6 +67,18 @@ export const PauseIcon = () => (
   </svg>
 )
 
+export const PhoneIcon = () => (
+  <svg {...base(18)} strokeWidth={1.8}>
+    <path d="M6.6 3.8h2.6l1.4 4-1.9 1.3a11 11 0 0 0 5.2 5.2l1.3-1.9 4 1.4v2.6a1.8 1.8 0 0 1-2 1.8A15.8 15.8 0 0 1 4.8 5.8a1.8 1.8 0 0 1 1.8-2Z" />
+  </svg>
+)
+
+export const LocateIcon = () => (
+  <svg {...base(18)} strokeWidth={1.8}>
+    <path d="m4.5 11.2 15-6.7-6.7 15-1.7-6.6-6.6-1.7Z" />
+  </svg>
+)
+
 export const CheckIcon = () => (
   <svg {...base(15)} strokeWidth={2}>
     <path d="m5 12.5 4.5 4.5L19 7.5" />

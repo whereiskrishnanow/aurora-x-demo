@@ -26,8 +26,17 @@ const SCHEMA = {
           detail: { type: 'STRING' },
           quote: { type: 'STRING' },
           badge: { type: 'STRING' },
+          duration: { type: 'STRING' },
+          transcript: {
+            type: 'ARRAY',
+            items: {
+              type: 'OBJECT',
+              properties: { speaker: { type: 'STRING' }, text: { type: 'STRING' } },
+              required: ['speaker', 'text'],
+            },
+          },
         },
-        required: ['name', 'rating', 'reviews', 'distance', 'price', 'detail', 'quote', 'badge'],
+        required: ['name', 'rating', 'reviews', 'distance', 'price', 'detail', 'quote', 'badge', 'duration', 'transcript'],
       },
     },
     summary: { type: 'STRING' },
@@ -46,7 +55,9 @@ Invent a realistic outcome for a product prototype:
   name; rating 4.0 to 5.0; reviews count; distance like "1.2 km"; price in rupees using the ₹ sign (e.g. "₹1,800", "₹28,000/month", "₹450/visit");
   detail: one short line of the key facts (e.g. "Delivers by 4:30 PM · 2 dozen in stock");
   quote: what the person on the phone said, one natural sentence;
-  badge: one of "Best price", "Fastest", "Closest", "Top rated", "In stock" (each at most once).
+  badge: one of "Best price", "Fastest", "Closest", "Top rated", "In stock" (each at most once);
+  duration: how long the call took, like "1:42";
+  transcript: the call in 4 short lines, alternating speaker "Aurora" (the agent asking) and "Business" (the reply), consistent with the quote.
 - summary: one or two short speakable sentences for the user summarising what you found and the best option, e.g. "I called 18 florists and 4 can deliver by 5 PM. Petal & Stem is cheapest at ₹1,650."`
 
 const json = (status: number, body: unknown) =>
@@ -69,7 +80,7 @@ export async function handleSearch(request: Request, apiKey: string | undefined)
           contents: [{ role: 'user', parts: [{ text: prompt(String(brief).slice(0, 1500)) }] }],
           generationConfig: {
             temperature: 0.8,
-            maxOutputTokens: 1500,
+            maxOutputTokens: 2500,
             responseMimeType: 'application/json',
             responseSchema: SCHEMA,
             thinkingConfig: model.startsWith('gemini-2') ? { thinkingBudget: 0 } : { thinkingLevel: 'low' },

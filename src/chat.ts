@@ -17,6 +17,8 @@ export interface SearchResult {
     detail: string
     quote: string
     badge: string
+    duration?: string
+    transcript?: { speaker: string; text: string }[]
   }[]
 }
 

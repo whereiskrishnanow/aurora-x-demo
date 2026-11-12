@@ -1,12 +1,90 @@
 import { useEffect, useState } from 'react'
 import type { SearchResult } from './chat'
+import { LiquidGlass } from './glass/LiquidGlass'
+import { LocateIcon, PhoneIcon } from './icons'
 
 /**
  * The "calling around" card: counters tick up while the search runs, then the
  * confirmed results slide in one by one. Results are simulated in this
  * prototype, and the card says so.
  */
-export function LiveSearch({ result, failed }: { result?: SearchResult; failed?: string }) {
+type Business = SearchResult['results'][number]
+
+/** Shared look for the small glass buttons on a result card. */
+const glass = {
+  bezel: 10,
+  thickness: 9,
+  blur: 0.5,
+  aberration: 0.1,
+  specular: 1,
+  tint: 'rgba(255, 255, 255, 0.3)',
+  interactive: true,
+} as const
+
+function ResultCard({ r, place }: { r: Business; place: string }) {
+  const [open, setOpen] = useState(false)
+  const [note, setNote] = useState('')
+
+  const call = () => {
+    setNote('Calling isn’t available for demo businesses.')
+    window.setTimeout(() => setNote(''), 2600)
+  }
+  // Demo businesses have no address, so show the area they'd be in.
+  const locate = () => {
+    const query = encodeURIComponent(`${place || 'Bengaluru'}, Bengaluru`)
+    window.open(`https://www.google.com/maps/search/?api=1&query=${query}`, '_blank', 'noopener')
+  }
+
+  return (
+    <article className="live-card">
+      <div className="live-card-top">
+        <h4>{r.name}</h4>
+        {r.badge && <span className="live-badge">{r.badge}</span>}
+      </div>
+      <p className="live-meta">
+        ★ {r.rating.toFixed(1)} ({r.reviews}) · {r.distance}
+      </p>
+      <p className="live-price">{r.price}</p>
+      <p className="live-detail">{r.detail}</p>
+      <p className="live-quote">“{r.quote}”</p>
+
+      {open && (
+        <div className="call-info">
+          <p className="call-info-head">Call · {r.duration ?? '1:30'} · simulated</p>
+          {(r.transcript ?? [{ speaker: 'Business', text: r.quote }]).map((line, i) => (
+            <p key={i} className={`call-line ${line.speaker === 'Aurora' ? 'agent' : 'business'}`}>
+              <b>{line.speaker === 'Aurora' ? 'Aurora' : 'Business'}</b>
+              {line.text}
+            </p>
+          ))}
+        </div>
+      )}
+
+      <div className="live-actions">
+        <LiquidGlass
+          as="button"
+          type="button"
+          className="live-action live-info"
+          radius={17}
+          {...glass}
+          aria-expanded={open}
+          onClick={() => setOpen((v) => !v)}
+        >
+          {open ? 'Hide call info' : 'View call info'}
+        </LiquidGlass>
+        <LiquidGlass as="button" type="button" className="live-action live-icon" radius={17} {...glass} aria-label={`Call ${r.name}`} onClick={call}>
+          <PhoneIcon />
+        </LiquidGlass>
+        <LiquidGlass as="button" type="button" className="live-action live-icon" radius={17} {...glass} aria-label={`Locate ${r.name}`} onClick={locate}>
+          <LocateIcon />
+        </LiquidGlass>
+      </div>
+      {note && <p className="live-toast">{note}</p>}
+    </article>
+  )
+}
+
+export function LiveSearch({ result, failed, place = '' }: { result?: SearchResult; failed?: string; place?: string }) {
   const [now, setNow] = useState(() => performance.now())
   const [startedAt] = useState(() => performance.now())
   const [doneAt, setDoneAt] = useState<number | null>(null)
@@ -61,19 +139,7 @@ export function LiveSearch({ result, failed }: { result?: SearchResult; failed?:
       {result && (
         <div className="live-results">
           {result.results.slice(0, shown).map((r) => (
-            <article key={r.name} className="live-card">
-              <div className="live-card-top">
-                <h4>{r.name}</h4>
-                {r.badge && <span className="live-badge">{r.badge}</span>}
-              </div>
-              <p className="live-meta">
-                ★ {r.rating.toFixed(1)} ({r.reviews}) · {r.distance}
-              </p>
-              <p className="live-price">{r.price}</p>
-              <p className="live-detail">{r.detail}</p>
-              <p className="live-quote">“{r.quote}”</p>
-              <p className="live-called">✓ Called</p>
-            </article>
+            <ResultCard key={r.name} r={r} place={place} />
           ))}
         </div>
       )}
