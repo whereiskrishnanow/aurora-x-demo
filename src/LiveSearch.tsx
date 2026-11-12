@@ -155,9 +155,24 @@ export function LiveSearch({
               <b>{result ? result.results.length : 0}</b> confirmed
             </span>
           </div>
-          <div className="live-bar">
-            <span style={{ width: `${result ? 100 : Math.min(92, 8 + seconds * 4)}%` }} />
-          </div>
+          {/* A glass tube with the progress flowing inside it. */}
+          <LiquidGlass
+            className="live-bar"
+            contentClassName="live-bar-body"
+            radius={8}
+            bezel={6}
+            thickness={6}
+            blur={0.5}
+            aberration={0.12}
+            specular={1}
+            tint="rgba(238, 243, 241, 0.55)"
+            role="progressbar"
+            aria-valuemin={0}
+            aria-valuemax={100}
+            aria-valuenow={Math.round(result ? 100 : Math.min(92, 8 + seconds * 4))}
+          >
+            <span className="live-fill" style={{ width: `${result ? 100 : Math.min(92, 8 + seconds * 4)}%` }} />
+          </LiquidGlass>
         </>
       )}
       {result && (

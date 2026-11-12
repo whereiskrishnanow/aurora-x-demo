@@ -1265,19 +1265,58 @@ select {
 }
 
 .live-bar {
-  height: 4px;
-  margin-top: 10px;
-  border-radius: 2px;
-  background: #eef1f0;
+  height: 16px;
+  margin-top: 12px;
+  box-shadow:
+    0 0 0 0.5px rgba(0, 0, 0, 0.08),
+    inset 0 1px 2px rgba(0, 0, 0, 0.05),
+    0 2px 6px rgba(0, 0, 0, 0.05);
+}
+
+.lg-content.live-bar-body {
+  display: block;
+  padding: 3px;
+}
+
+/* The liquid inside the tube: the brand gradient with a glossy top. */
+.live-fill {
+  position: relative;
+  display: block;
+  height: 100%;
+  min-width: 10px;
+  border-radius: 6px;
+  background: linear-gradient(90deg, #14b8a6, #1d9e75 55%, #38aae6);
+  box-shadow:
+    inset 0 1px 1px rgba(255, 255, 255, 0.55),
+    inset 0 -1px 1px rgba(0, 60, 50, 0.18),
+    0 1px 4px rgba(29, 158, 117, 0.35);
+  transition: width 0.5s ease;
   overflow: hidden;
 }
 
-.live-bar span {
-  display: block;
-  height: 100%;
-  border-radius: 2px;
-  background: linear-gradient(90deg, #14b8a6, #1d9e75, #38aae6);
-  transition: width 0.5s ease;
+/* A soft shine travelling along the liquid while it fills. */
+.live-fill::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(100deg, transparent 30%, rgba(255, 255, 255, 0.45) 50%, transparent 70%);
+  background-size: 200% 100%;
+  animation: live-shine 1.8s linear infinite;
+}
+
+@keyframes live-shine {
+  from {
+    background-position: 150% 0;
+  }
+  to {
+    background-position: -50% 0;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .live-fill::after {
+    animation: none;
+  }
 }
 
 .live-error {
