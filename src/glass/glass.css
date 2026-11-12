@@ -1,0 +1,236 @@
+/*
+ * Liquid glass layers, bottom to top:
+ *   .lg-backdrop  blur -> SVG refraction + dispersion + saturation (Chromium)
+ *                 or a soft blur (Safari / Firefox / every iOS browser)
+ *   .lg-lens      fallback only: heavier, brighter blur masked to the bezel,
+ *                 standing in for the smeared rim refraction
+ *   .lg-tint      luminosity tint
+ *   .lg-light     lighting, all driven by the shared --lg-light angle:
+ *                   .lg-shade  soft inner shading on the side facing away
+ *                   .lg-glow   soft bloom just inside the rim
+ *                   .lg-edge   crisp specular rim
+ *                   .lg-press  light pooling under the finger
+ *   .lg-content   the control's own content
+ *
+ * The root must never get opacity / filter / mask: those make it a backdrop
+ * root and the glass would have nothing behind it to refract.
+ */
+:root {
+  --lg-light: 315deg;
+  /* device tilt, -1..1, from light.ts (gyroscope, or the pointer on desktop) */
+  --lg-tx: 0;
+  --lg-ty: 0;
+}
+
+:where(.lg) {
+  position: relative;
+  display: block;
+  margin: 0;
+  padding: 0;
+  border: 0;
+  background: none;
+  color: inherit;
+  font: inherit;
+  text-align: inherit;
+  -webkit-tap-highlight-color: transparent;
+  --lg-spec: 1;
+  /* No translate/transform at rest here: Chromium stops feeding the
+     backdrop to a transformed root's glass. Tilt moves the inner layers. */
+  box-shadow:
+    0 0 0 0.5px rgba(0, 0, 0, 0.07),
+    0 1px 1.5px rgba(0, 0, 0, 0.05),
+    0 6px 16px rgba(0, 0, 0, 0.07),
+    0 16px 36px rgba(0, 0, 0, 0.05);
+}
+
+.lg-defs {
+  position: absolute;
+  width: 0;
+  height: 0;
+  pointer-events: none;
+}
+
+.lg-backdrop,
+.lg-lens,
+.lg-tint,
+.lg-light,
+.lg-light span {
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  pointer-events: none;
+}
+
+.lg-backdrop,
+.lg-light {
+  overflow: hidden;
+}
+
+.lg-lens {
+  -webkit-mask-size: 100% 100%;
+  mask-size: 100% 100%;
+  -webkit-mask-repeat: no-repeat;
+  mask-repeat: no-repeat;
+}
+
+.lg-tint {
+  background: var(--lg-tint, rgba(255, 255, 255, 0.45));
+}
+
+/* ---------- lighting ---------- */
+
+/* A ring of a given width, cut with a two-layer mask. */
+.lg-light {
+  /* The bright side of the rim slides round as the phone tilts. */
+  --lg-cx: calc(50% - var(--lg-tx) * 14%);
+  --lg-cy: calc(50% - var(--lg-ty) * 14%);
+}
+
+.lg-shade,
+.lg-glow,
+.lg-edge {
+  -webkit-mask:
+    linear-gradient(#000 0 0) content-box,
+    linear-gradient(#000 0 0);
+  -webkit-mask-composite: xor;
+  mask:
+    linear-gradient(#000 0 0) content-box exclude,
+    linear-gradient(#000 0 0);
+}
+
+.lg-soft-shade {
+  filter: blur(6px);
+}
+
+.lg-soft-glow {
+  filter: blur(2.5px);
+}
+
+/* Glass is thicker at the rim, so it bends and dims more light there,
+   most of all on the side turned away from the light. */
+.lg-shade {
+  inset: -4px !important;
+  padding: 14px;
+  background: conic-gradient(
+    from var(--lg-light) at var(--lg-cx) var(--lg-cy),
+    rgba(0, 0, 0, 0.012) 0deg,
+    rgba(0, 0, 0, 0.03) 70deg,
+    rgba(0, 0, 0, 0.085) 180deg,
+    rgba(0, 0, 0, 0.03) 290deg,
+    rgba(0, 0, 0, 0.012) 360deg
+  );
+  opacity: var(--lg-shade, 1);
+}
+
+/* Light caught in the bevel: bright toward the light, with a weaker echo
+   on the far rim where it reflects back out through the glass. */
+.lg-glow {
+  padding: 3px;
+  background: conic-gradient(
+    from var(--lg-light) at var(--lg-cx) var(--lg-cy),
+    rgba(255, 255, 255, 0.95) 0deg,
+    rgba(255, 255, 255, 0.1) 62deg,
+    rgba(255, 255, 255, 0) 100deg,
+    rgba(255, 255, 255, 0.55) 180deg,
+    rgba(255, 255, 255, 0) 260deg,
+    rgba(255, 255, 255, 0.1) 298deg,
+    rgba(255, 255, 255, 0.95) 360deg
+  );
+  opacity: calc(var(--lg-spec) * 0.9);
+}
+
+.lg-edge {
+  padding: 1px;
+  background: conic-gradient(
+    from var(--lg-light) at var(--lg-cx) var(--lg-cy),
+    #fff 0deg,
+    rgba(255, 255, 255, 0.35) 55deg,
+    rgba(255, 255, 255, 0.12) 100deg,
+    rgba(255, 255, 255, 0.8) 180deg,
+    rgba(255, 255, 255, 0.12) 260deg,
+    rgba(255, 255, 255, 0.35) 305deg,
+    #fff 360deg
+  );
+  opacity: var(--lg-spec);
+}
+
+/* A soft band of reflected light that glides across the glass with the tilt. */
+.lg-sheen {
+  background: linear-gradient(
+    112deg,
+    rgba(255, 255, 255, 0) 30%,
+    rgba(255, 255, 255, 0.28) 45%,
+    rgba(255, 255, 255, 0.42) 50%,
+    rgba(255, 255, 255, 0.28) 55%,
+    rgba(255, 255, 255, 0) 70%
+  );
+  background-size: 260% 100%;
+  background-repeat: no-repeat;
+  background-position: calc(50% + var(--lg-tx) * 55%) 0;
+  opacity: calc(var(--lg-spec) * (0.25 + (max(var(--lg-tx), -1 * var(--lg-tx)) + max(var(--lg-ty), -1 * var(--lg-ty))) * 0.45));
+  mix-blend-mode: soft-light;
+}
+
+.lg-press {
+  background: radial-gradient(
+    circle at var(--lg-px, 50%) var(--lg-py, 50%),
+    rgba(255, 255, 255, 0.75) 0,
+    rgba(255, 255, 255, 0.22) 38%,
+    rgba(255, 255, 255, 0) 72%
+  );
+  opacity: var(--lg-press, 0);
+}
+
+.lg-content {
+  position: relative;
+  /* Content floats inside the glass, so it shifts against the tilt. */
+  translate: calc(var(--lg-tx) * -2px) calc(var(--lg-ty) * -2px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  height: 100%;
+  border-radius: inherit;
+}
+
+/* ---------- interaction ---------- */
+
+.lg[data-interactive] {
+  cursor: pointer;
+  touch-action: manipulation;
+  will-change: transform;
+}
+
+.lg[data-interactive]:focus-visible {
+  outline: 2px solid #0e9488;
+  outline-offset: 3px;
+}
+
+/* ---------- system settings that alter the material ---------- */
+
+@media (prefers-reduced-motion: reduce) {
+  .lg-content {
+    translate: none;
+  }
+}
+
+@media (prefers-reduced-transparency: reduce) {
+  .lg-backdrop,
+  .lg-lens,
+  .lg-glow,
+  .lg-shade,
+  .lg-sheen {
+    display: none;
+  }
+  .lg-tint {
+    background: #fbfbfb;
+    box-shadow: inset 0 0 0 1px rgba(0, 0, 0, 0.1);
+  }
+}
+
+@media (prefers-contrast: more) {
+  .lg-tint {
+    background: rgba(255, 255, 255, 0.92);
+    box-shadow: inset 0 0 0 1.5px rgba(0, 0, 0, 0.55);
+  }
+}

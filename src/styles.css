@@ -1,0 +1,1071 @@
+:root {
+  --bg: #f6f6f6;
+  --ink: #1b1b1b;
+  --muted: #7a7a7a;
+  --line: #dedede;
+  --bubble: #ececec;
+  --teal: #0e9488;
+  --teal-soft: #e2f2ef;
+  --teal-line: #b9dcd6;
+  --gutter: 16px;
+  --composer-height: 87px;
+  --safe-top: max(env(safe-area-inset-top), 14px);
+  --composer-bottom: calc(max(env(safe-area-inset-bottom), 10px) + 6px);
+  font-family: 'Inter Variable', Inter, -apple-system, system-ui, sans-serif;
+  color: var(--ink);
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html,
+body,
+#root {
+  height: 100%;
+  margin: 0;
+}
+
+body {
+  background: var(--bg);
+  overscroll-behavior: none;
+}
+
+button,
+input {
+  font: inherit;
+  color: inherit;
+}
+
+h1,
+h2,
+h3,
+p,
+ul {
+  margin: 0;
+  padding: 0;
+}
+
+/* ---------- stage + device ---------- */
+
+.stage {
+  height: 100dvh;
+  display: grid;
+  place-items: center;
+}
+
+.screen {
+  position: relative;
+  width: 100%;
+  height: 100dvh;
+  overflow: hidden;
+  background: var(--bg);
+}
+
+/* Simulated device metrics: iPhone at 402 x 874pt, as in the reference. */
+.screen.simulated {
+  --safe-top: 54px;
+  --composer-bottom: 33px;
+}
+
+@media (min-width: 520px) {
+  body {
+    background: #dfe1e4;
+  }
+  .screen {
+    width: 402px;
+    height: min(874px, calc(100dvh - 40px));
+    border-radius: 56px;
+    box-shadow:
+      0 0 0 11px #101012,
+      0 0 0 12.5px #3a3a3e,
+      0 40px 90px rgba(0, 0, 0, 0.28);
+  }
+}
+
+/* ---------- status bar (drawn only for the simulated device) ---------- */
+
+.statusbar {
+  position: absolute;
+  inset: 0 0 auto 0;
+  height: 54px;
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  padding: 19px 28px 0 44px;
+  pointer-events: none;
+  font-size: 17px;
+  font-weight: 600;
+  letter-spacing: -0.01em;
+}
+
+.statusbar .time {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  line-height: 22px;
+}
+
+.statusbar .island {
+  position: absolute;
+  top: 12px;
+  left: 50%;
+  width: 122px;
+  height: 36px;
+  margin-left: -61px;
+  border-radius: 18px;
+  background: #000;
+}
+
+.statusbar .indicators {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  height: 22px;
+}
+
+.statusbar .battery {
+  display: grid;
+  place-items: center;
+  width: 27px;
+  height: 14px;
+  border-radius: 4.5px;
+  background: linear-gradient(to right, #f6c945 0 46%, #cfcfcf 46% 100%);
+  font-size: 11.5px;
+  font-weight: 700;
+  line-height: 1;
+}
+
+/* ---------- content layer ---------- */
+
+.scroll {
+  position: absolute;
+  inset: 0;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  scrollbar-width: none;
+  padding: calc(var(--safe-top) + 60px) var(--gutter)
+    calc(var(--composer-bottom) + var(--composer-height) + 17px);
+}
+
+.scroll::-webkit-scrollbar {
+  display: none;
+}
+
+.thread {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  font-size: 15px;
+  line-height: 20px;
+  letter-spacing: -0.004em;
+}
+
+.row {
+  animation: rise 0.36s cubic-bezier(0.2, 0.8, 0.2, 1) both;
+}
+
+@keyframes rise {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+}
+
+.empty {
+  min-height: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  /* sit at the optical centre of the full screen, not the padded scroll box */
+  padding-bottom: calc(var(--safe-top) + 60px - var(--composer-bottom) - var(--composer-height) - 17px);
+  animation: rise 0.4s cubic-bezier(0.2, 0.8, 0.2, 1) both;
+}
+
+.empty-mark {
+  width: 58px;
+  height: auto;
+  margin-bottom: 21px;
+}
+
+.empty h2 {
+  font-size: 25px;
+  font-weight: 650;
+  color: #111;
+  line-height: 30px;
+  letter-spacing: -0.035em;
+}
+
+.empty p {
+  margin-top: 8px;
+  font-size: 16px;
+  line-height: 20px;
+  color: var(--muted);
+}
+
+/* Two drifting rows of starter prompts, just above the composer. */
+.starters {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: calc(var(--composer-bottom) + var(--composer-height) + 9px);
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  animation: rise 0.5s 0.08s cubic-bezier(0.2, 0.8, 0.2, 1) both;
+}
+
+.starter-row {
+  display: flex;
+  gap: 5px;
+  overflow-x: auto;
+  scrollbar-width: none;
+  overscroll-behavior-x: contain;
+}
+
+.starter-row::-webkit-scrollbar {
+  display: none;
+}
+
+.starter {
+  flex: none;
+  height: 29px;
+  padding: 0 11px;
+  border: 1px solid var(--line);
+  border-radius: 15px;
+  background: #f8f8f8;
+  font-size: 13px;
+  letter-spacing: -0.005em;
+  white-space: nowrap;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+  transition:
+    transform 0.15s ease,
+    background 0.2s ease;
+}
+
+.starter:active {
+  transform: scale(0.96);
+  background: #efefef;
+}
+
+.starter:focus-visible {
+  outline: 2px solid var(--teal);
+  outline-offset: -2px;
+}
+
+.row.settled {
+  animation: none;
+}
+
+.row.user {
+  display: flex;
+  justify-content: flex-end;
+}
+
+.bubble {
+  max-width: 82%;
+  padding: 11.5px 12px;
+  border-radius: 20px;
+  background: var(--bubble);
+  overflow-wrap: anywhere;
+}
+
+.row.question {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.row.assistant + .row.question {
+  margin-top: -4px;
+}
+
+.chips {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 4px;
+}
+
+.chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  height: 33px;
+  padding: 0 12px;
+  border: 1px solid var(--line);
+  border-radius: 17px;
+  background: #fafafa;
+  box-shadow: 0 1px 1.5px rgba(0, 0, 0, 0.04);
+  font-size: 13px;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+  transition:
+    transform 0.15s ease,
+    background 0.2s ease,
+    border-color 0.2s ease,
+    color 0.2s ease;
+}
+
+.chip:active {
+  transform: scale(0.96);
+  background: #f0f0f0;
+}
+
+.chip:focus-visible,
+.tool:focus-visible,
+.drawer li button:focus-visible {
+  outline: 2px solid var(--teal);
+  outline-offset: 2px;
+}
+
+.chip:disabled {
+  cursor: default;
+  color: #b7b7b7;
+  border-color: #e9e9e9;
+  background: transparent;
+  box-shadow: none;
+}
+
+.chip.selected:disabled {
+  color: var(--teal);
+  border-color: var(--teal-line);
+  background: var(--teal-soft);
+}
+
+.row.typing {
+  display: flex;
+  gap: 5px;
+  padding: 8px 2px;
+}
+
+.row.typing span {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: #a9a9a9;
+  animation: blink 1.1s ease-in-out infinite;
+}
+
+.row.typing span:nth-child(2) {
+  animation-delay: 0.15s;
+}
+
+.row.typing span:nth-child(3) {
+  animation-delay: 0.3s;
+}
+
+@keyframes blink {
+  0%,
+  80%,
+  100% {
+    opacity: 0.35;
+    transform: translateY(0);
+  }
+  40% {
+    opacity: 1;
+    transform: translateY(-3px);
+  }
+}
+
+.row.listings {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin-top: -6px;
+}
+
+.listing-note {
+  margin: 0 0 -2px;
+  font-size: 12px;
+  line-height: 16px;
+  color: #8a8a8a;
+}
+
+.listing {
+  display: flex;
+  gap: 12px;
+  padding: 10px;
+  border: 1px solid #e6e6e6;
+  border-radius: 22px;
+  background: #fdfdfd;
+}
+
+.listing-art {
+  flex: none;
+  width: 84px;
+  height: 84px;
+  border-radius: 13px;
+}
+
+.listing-body {
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  gap: 1px;
+}
+
+.listing-body h3 {
+  font-size: 15px;
+  font-weight: 550;
+  line-height: 19px;
+}
+
+.listing-body p {
+  font-size: 13px;
+  line-height: 17px;
+  color: var(--muted);
+}
+
+.listing-body strong {
+  margin-top: 3px;
+  font-size: 15px;
+  font-weight: 600;
+  color: var(--teal);
+}
+
+.listing-body strong span {
+  font-size: 12.5px;
+  font-weight: 400;
+  color: var(--muted);
+}
+
+/* ---------- scroll edge effects ----------
+ * Content scrolling under the controls is blurred and washed out so the title
+ * and status bar stay legible. Each effect is masked to leave a hole exactly
+ * where a glass control sits, so the glass refracts the real content instead
+ * of an already-washed-out copy of it.
+ */
+
+.edge {
+  position: absolute;
+  left: 0;
+  right: 0;
+  pointer-events: none;
+  -webkit-backdrop-filter: blur(7px);
+  backdrop-filter: blur(7px);
+  -webkit-mask-composite: xor;
+  mask-composite: exclude;
+  -webkit-mask-repeat: no-repeat;
+  mask-repeat: no-repeat;
+}
+
+.edge-top {
+  --hole: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 44 44'%3E%3Ccircle cx='22' cy='22' r='21.5'/%3E%3C/svg%3E");
+  top: 0;
+  height: calc(var(--safe-top) + 72px);
+  background: linear-gradient(
+    to bottom,
+    rgba(246, 246, 246, 0.96) 0,
+    rgba(246, 246, 246, 0.9) calc(100% - 22px),
+    rgba(246, 246, 246, 0) 100%
+  );
+  -webkit-mask-image: var(--hole), var(--hole),
+    linear-gradient(to bottom, #000 0, #000 calc(100% - 16px), transparent 100%);
+  mask-image: var(--hole), var(--hole),
+    linear-gradient(to bottom, #000 0, #000 calc(100% - 16px), transparent 100%);
+  -webkit-mask-position:
+    20px calc(var(--safe-top) + 8px),
+    calc(100% - 20px) calc(var(--safe-top) + 8px),
+    0 0;
+  mask-position:
+    20px calc(var(--safe-top) + 8px),
+    calc(100% - 20px) calc(var(--safe-top) + 8px),
+    0 0;
+  -webkit-mask-size:
+    44px 44px,
+    44px 44px,
+    100% 100%;
+  mask-size:
+    44px 44px,
+    44px 44px,
+    100% 100%;
+}
+
+.edge-bottom {
+  --hole: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg'%3E%3Crect width='100%25' height='100%25' rx='28'/%3E%3C/svg%3E");
+  --fade: 22px;
+  bottom: 0;
+  height: calc(var(--composer-bottom) + var(--composer-height) + var(--fade));
+  background: linear-gradient(
+    to bottom,
+    rgba(251, 251, 251, 0) 0,
+    rgba(251, 251, 251, 0.82) var(--fade),
+    rgba(251, 251, 251, 0.94) 100%
+  );
+  -webkit-mask-image: var(--hole), linear-gradient(to bottom, transparent 0, #000 calc(var(--fade) - 2px));
+  mask-image: var(--hole), linear-gradient(to bottom, transparent 0, #000 calc(var(--fade) - 2px));
+  -webkit-mask-position:
+    var(--gutter) var(--fade),
+    0 0;
+  mask-position:
+    var(--gutter) var(--fade),
+    0 0;
+  -webkit-mask-size:
+    calc(100% - var(--gutter) * 2) var(--composer-height),
+    100% 100%;
+  mask-size:
+    calc(100% - var(--gutter) * 2) var(--composer-height),
+    100% 100%;
+}
+
+/* ---------- control layer ---------- */
+
+.header {
+  position: absolute;
+  top: calc(var(--safe-top) + 8px);
+  left: 20px;
+  right: 20px;
+  height: 44px;
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  pointer-events: none;
+}
+
+.header > * {
+  pointer-events: auto;
+}
+
+.round-button {
+  flex: none;
+  width: 44px;
+  height: 44px;
+}
+
+.heading {
+  flex: 1;
+  min-width: 0;
+}
+
+.heading h1 {
+  font-size: 17px;
+  font-weight: 500;
+  line-height: 24px;
+  letter-spacing: -0.012em;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.heading.centered {
+  display: flex;
+  justify-content: center;
+}
+
+.heading.centered p {
+  font-size: 15px;
+}
+
+.heading p {
+  display: flex;
+  align-items: center;
+  gap: 3px;
+  font-size: 13px;
+  line-height: 20px;
+  color: var(--muted);
+}
+
+.composer {
+  position: absolute;
+  left: var(--gutter);
+  right: var(--gutter);
+  bottom: var(--composer-bottom);
+  height: var(--composer-height);
+  box-shadow:
+    0 0 0 0.5px rgba(0, 0, 0, 0.05),
+    0 0 30px 6px rgba(255, 255, 255, 0.8),
+    0 1px 2px rgba(0, 0, 0, 0.05),
+    0 8px 28px rgba(0, 0, 0, 0.07);
+}
+
+.lg-content.composer-body {
+  display: block;
+}
+
+.composer-input {
+  display: block;
+  width: 100%;
+  height: 42px;
+  padding: 0 12px 0 13px;
+  border: 0;
+  outline: 0;
+  background: transparent;
+  font-size: 16px;
+  letter-spacing: -0.006em;
+}
+
+.composer-input::placeholder {
+  color: #838383;
+  opacity: 1;
+}
+
+.composer-tools {
+  position: absolute;
+  left: 0;
+  right: 9px;
+  bottom: 8px;
+  height: 40px;
+  display: flex;
+  align-items: center;
+}
+
+.composer-tools .spacer {
+  flex: 1;
+}
+
+.tool {
+  display: grid;
+  place-items: center;
+  width: 32px;
+  height: 40px;
+  padding: 0;
+  border: 0;
+  border-radius: 12px;
+  background: none;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+  transition:
+    transform 0.15s ease,
+    opacity 0.15s ease;
+}
+
+.composer-tools .tool:first-child {
+  width: 40px;
+}
+
+.tool:active {
+  transform: scale(0.88);
+  opacity: 0.55;
+}
+
+/* ---------- voice / send: a glass pebble resting on the composer ---------- */
+
+.voice {
+  width: 42px;
+  height: 42px;
+  margin-left: 4px;
+  flex: none;
+  color: var(--teal);
+  box-shadow:
+    0 0 0 0.5px rgba(0, 0, 0, 0.08),
+    0 1px 2px rgba(0, 0, 0, 0.08),
+    0 4px 10px rgba(0, 0, 0, 0.08);
+  transition:
+    color 0.25s ease,
+    box-shadow 0.35s ease;
+}
+
+.voice .lg-tint {
+  transition: background 0.3s ease;
+}
+
+.voice .lg-content {
+  display: grid;
+  place-items: center;
+}
+
+.voice-glyph {
+  grid-area: 1 / 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition:
+    opacity 0.22s ease,
+    transform 0.38s cubic-bezier(0.2, 1.5, 0.4, 1);
+}
+
+/* Five rounded bars: still at rest, alive while listening. */
+.voice-wave {
+  gap: 2.5px;
+  height: 18px;
+}
+
+.voice-wave i {
+  display: block;
+  width: 2.6px;
+  height: 18px;
+  border-radius: 2px;
+  background: currentColor;
+  transform: scaleY(var(--h));
+  transition: transform 0.3s ease;
+}
+
+.voice-arrow {
+  opacity: 0;
+  transform: translateY(8px) scale(0.6);
+}
+
+.voice-send {
+  color: #fff;
+  box-shadow:
+    0 0 0 0.5px rgba(14, 148, 136, 0.4),
+    0 2px 6px rgba(14, 148, 136, 0.28),
+    0 6px 14px rgba(14, 148, 136, 0.2);
+}
+
+.voice-send .voice-wave {
+  opacity: 0;
+  transform: translateY(-8px) scale(0.6);
+}
+
+.voice-send .voice-arrow {
+  opacity: 1;
+  transform: none;
+}
+
+.voice-listening {
+  animation: voice-halo 1.6s ease-in-out infinite;
+}
+
+.voice-listening .voice-wave i {
+  animation: voice-bar 0.9s ease-in-out infinite alternate;
+  animation-delay: calc(var(--i) * -0.17s);
+}
+
+@keyframes voice-bar {
+  0% {
+    transform: scaleY(0.2);
+  }
+  100% {
+    transform: scaleY(1);
+  }
+}
+
+@keyframes voice-halo {
+  0%,
+  100% {
+    box-shadow:
+      0 0 0 0.5px rgba(14, 148, 136, 0.35),
+      0 0 0 0 rgba(14, 148, 136, 0.28),
+      0 4px 10px rgba(14, 148, 136, 0.15);
+  }
+  50% {
+    box-shadow:
+      0 0 0 0.5px rgba(14, 148, 136, 0.35),
+      0 0 0 7px rgba(14, 148, 136, 0),
+      0 4px 14px rgba(14, 148, 136, 0.25);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .voice-listening,
+  .voice-listening .voice-wave i {
+    animation: none;
+  }
+}
+
+/* ---------- menu sheet ---------- */
+
+.scrim {
+  position: absolute;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.14);
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.3s ease;
+}
+
+.scrim.open {
+  opacity: 1;
+  pointer-events: auto;
+}
+
+.drawer {
+  position: absolute;
+  top: calc(var(--safe-top) + 4px);
+  bottom: 14px;
+  left: 10px;
+  width: min(300px, calc(100% - 72px));
+  transform: translateX(calc(-100% - 24px));
+  visibility: hidden;
+  box-shadow: none;
+  transition:
+    transform 0.5s cubic-bezier(0.22, 1.12, 0.36, 1),
+    box-shadow 0.5s ease,
+    visibility 0s 0.5s;
+}
+
+.drawer.open {
+  transform: none;
+  visibility: visible;
+  box-shadow:
+    0 1px 2px rgba(0, 0, 0, 0.08),
+    0 18px 60px rgba(0, 0, 0, 0.18);
+  transition:
+    transform 0.5s cubic-bezier(0.22, 1.12, 0.36, 1),
+    box-shadow 0.5s ease,
+    visibility 0s;
+}
+
+.lg-content.drawer-body {
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  justify-content: flex-start;
+  padding: 18px 12px 14px;
+}
+
+.drawer-body ul {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  scrollbar-width: none;
+}
+
+/* Teal glass pill pinned to the foot of the sheet. */
+.drawer-new {
+  flex: none;
+  width: 100%;
+  height: 52px;
+  margin-top: 10px;
+  color: #fff;
+  font-size: 16px;
+  font-weight: 600;
+  letter-spacing: -0.01em;
+  text-shadow: 0 1px 1px rgba(0, 70, 70, 0.25);
+  box-shadow:
+    0 0 0 0.5px rgba(0, 110, 110, 0.35),
+    0 2px 6px rgba(0, 153, 153, 0.25),
+    0 10px 24px rgba(0, 153, 153, 0.22);
+}
+
+.drawer-new .lg-content {
+  gap: 6px;
+}
+
+/* Keep the teal clean: lighter far-side shading, rim slightly softer. */
+.drawer-new {
+  --lg-shade: 0.35;
+}
+
+.drawer-new .lg-glow {
+  opacity: 0.6;
+}
+
+.drawer-new svg {
+  width: 20px;
+  height: 20px;
+  stroke-width: 2.2;
+}
+
+.drawer-head {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 0 4px 12px 8px;
+}
+
+.drawer-head h2 {
+  flex: 1;
+  font-size: 17px;
+  font-weight: 600;
+  letter-spacing: -0.015em;
+}
+
+.drawer ul {
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.drawer li button {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+  width: 100%;
+  padding: 10px 12px;
+  border: 0;
+  border-radius: 22px;
+  background: none;
+  text-align: left;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.drawer li button.current {
+  background: rgba(14, 148, 136, 0.11);
+}
+
+.drawer li button:active {
+  background: rgba(0, 0, 0, 0.06);
+}
+
+.drawer li span {
+  font-size: 15.5px;
+  font-weight: 500;
+  line-height: 21px;
+}
+
+
+@media (prefers-reduced-motion: reduce) {
+  .row,
+  .row.typing span {
+    animation: none;
+  }
+  .drawer,
+  .scrim {
+    transition: none;
+  }
+}
+
+@media (prefers-reduced-transparency: reduce) {
+  .edge {
+    -webkit-backdrop-filter: none;
+    backdrop-filter: none;
+  }
+}
+
+/* ---------- voice mode ---------- */
+
+/* Teal light pooled along the bottom; the glass buttons refract it. */
+.voice-aurora {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  height: 300px;
+  pointer-events: none;
+  overflow: hidden;
+  -webkit-mask-image: linear-gradient(to top, #000 45%, transparent 100%);
+  mask-image: linear-gradient(to top, #000 45%, transparent 100%);
+  animation: aurora-in 0.9s cubic-bezier(0.2, 0.8, 0.2, 1) both;
+}
+
+.aurora-field {
+  position: absolute;
+  inset: 0;
+  transform-origin: 50% 100%;
+  filter: blur(22px) saturate(125%);
+  will-change: transform, opacity;
+}
+
+.aurora-base {
+  position: absolute;
+  left: -10%;
+  right: -10%;
+  bottom: -20px;
+  height: 130px;
+  background: linear-gradient(90deg, rgb(120, 234, 230), rgb(104, 200, 204) 45%, rgb(122, 168, 186));
+}
+
+.aurora-blob {
+  position: absolute;
+  bottom: -60px;
+  height: 250px;
+  border-radius: 50%;
+  will-change: transform;
+}
+
+@keyframes aurora-in {
+  from {
+    opacity: 0;
+    transform: translateY(60px);
+  }
+}
+
+.voice-dock {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: calc(var(--composer-bottom) + 10px);
+  display: flex;
+  justify-content: center;
+  gap: 16px;
+  animation: dock-in 0.55s 0.05s cubic-bezier(0.2, 1.3, 0.4, 1) both;
+}
+
+@keyframes dock-in {
+  from {
+    transform: translateY(40px) scale(0.85);
+  }
+}
+
+.dock-button {
+  width: 54px;
+  height: 54px;
+  color: #1b1b1b;
+  box-shadow:
+    0 0 0 0.5px rgba(255, 255, 255, 0.6),
+    0 2px 6px rgba(20, 90, 95, 0.12),
+    0 10px 24px rgba(20, 90, 95, 0.14);
+}
+
+.dock-button svg {
+  width: 26px;
+  height: 26px;
+}
+
+.dock-button[aria-pressed='true'] {
+  color: #5c6b6c;
+}
+
+.voice-notice {
+  position: absolute;
+  left: 32px;
+  right: 32px;
+  bottom: calc(var(--composer-bottom) + 82px);
+  margin: 0;
+  font-size: 13px;
+  line-height: 18px;
+  text-align: center;
+  color: #2d5153;
+  animation: rise 0.4s ease both;
+  margin: 0 auto;
+  width: fit-content;
+  padding: 7px 12px;
+  border-radius: 14px;
+  background: rgba(255, 255, 255, 0.82);
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.06);
+}
+
+/* Keep the conversation clear of the light and the dock. */
+.screen.voice-on .scroll {
+  padding-bottom: calc(var(--composer-bottom) + 150px);
+}
+
+/* The user's words as they are recognised. */
+.row.user.live {
+  animation: none;
+}
+
+.row.user.live .bubble {
+  color: #1b1b1b;
+  background: rgba(235, 235, 235, 0.75);
+}
+
+/* Words still being recognised: lighter until the recogniser settles them. */
+.row.user.live .partial {
+  color: #8c8c8c;
+}
+
+.row.user.live .caret {
+  display: inline-block;
+  width: 2px;
+  height: 1.05em;
+  margin-left: 2px;
+  vertical-align: -0.15em;
+  border-radius: 1px;
+  background: var(--teal);
+  animation: caret 1s steps(1) infinite;
+}
+
+@keyframes caret {
+  50% {
+    opacity: 0;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .voice-aurora,
+  .voice-dock {
+    animation: none;
+  }
+}
