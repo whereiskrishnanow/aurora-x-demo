@@ -517,12 +517,14 @@ export default function App() {
           inert={!menuOpen}
         >
           <div className="drawer-head">
-            <img src={brandRibbon} alt="" width={30} height={21} />
-            <h2>Recent searches</h2>
+            <p className="wordmark" aria-label="Aurora">
+              aurora<span>.</span>
+            </p>
             <button type="button" className="tool" aria-label="Close menu" onClick={() => setMenuOpen(false)}>
               <CloseIcon />
             </button>
           </div>
+          <h2 className="drawer-title">Recent searches</h2>
           <ul>
             {RECENT_SEARCHES.map((item, index) => (
               <li key={item.title}>
