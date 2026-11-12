@@ -1771,3 +1771,122 @@ select {
   font-size: 14px;
   color: var(--muted);
 }
+
+/* ---------- research mode dropdown (above the composer, right) ---------- */
+
+.mode-scrim {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+}
+
+.mode-scrim.open {
+  pointer-events: auto;
+}
+
+.mode-menu {
+  position: absolute;
+  right: var(--gutter);
+  bottom: calc(var(--composer-bottom) + var(--composer-height) + 10px);
+  width: min(300px, calc(100% - 2 * var(--gutter)));
+  transform-origin: 85% 100%;
+  transform: translateY(8px) scale(0.92);
+  visibility: hidden;
+  box-shadow: none;
+  transition:
+    transform 0.3s cubic-bezier(0.2, 1.2, 0.4, 1),
+    visibility 0s 0.3s,
+    box-shadow 0.3s ease;
+}
+
+.mode-menu.open {
+  transform: none;
+  visibility: visible;
+  box-shadow:
+    0 0 0 0.5px rgba(0, 0, 0, 0.045),
+    0 8px 26px rgba(0, 0, 0, 0.1);
+  transition:
+    transform 0.32s cubic-bezier(0.2, 1.2, 0.4, 1),
+    visibility 0s,
+    box-shadow 0.3s ease;
+}
+
+.lg-content.mode-menu-body {
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  justify-content: flex-start;
+  padding: 12px 8px 8px;
+}
+
+.mode-menu-title {
+  margin: 0 10px 6px;
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  color: var(--muted);
+}
+
+.mode-option {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  padding: 10px;
+  border: 0;
+  border-radius: 16px;
+  background: none;
+  text-align: left;
+  color: inherit;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+  transition: background 0.2s ease;
+}
+
+.mode-option:active {
+  background: rgba(0, 0, 0, 0.05);
+}
+
+.mode-option.selected {
+  background: rgba(255, 255, 255, 0.7);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+}
+
+.mode-option svg {
+  flex: none;
+  color: #1d9e75;
+}
+
+.mode-text {
+  flex: 1;
+  min-width: 0;
+}
+
+.mode-name {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 15px;
+  font-weight: 600;
+}
+
+.mode-tag {
+  padding: 1px 7px;
+  border-radius: 8px;
+  font-size: 10.5px;
+  font-weight: 600;
+  color: #0f7a5a;
+  background: #e3f4ee;
+}
+
+.mode-desc {
+  display: block;
+  margin-top: 2px;
+  font-size: 12.5px;
+  line-height: 17px;
+  color: var(--muted);
+}
+
+.tool.active {
+  color: #1d9e75;
+}

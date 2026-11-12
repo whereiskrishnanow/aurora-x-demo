@@ -12,6 +12,7 @@ import { RECENT_SEARCHES, nextId, seedConversation, type Message } from './chat'
 import { ChatError, runSearch, streamReply } from './ai'
 import { LiveSearch, type Business } from './LiveSearch'
 import { CallSheet } from './CallSheet'
+import { ModeMenu, type ResearchMode } from './ModeMenu'
 import { listSearches, saveSearch, type SavedSearch } from './db'
 import {
   ArrowUpIcon,
@@ -119,6 +120,24 @@ export default function App() {
   const [draft, setDraft] = useState('')
   const [menuOpen, setMenuOpen] = useState(false)
   const [callFor, setCallFor] = useState<Business | null>(null)
+  const [modeOpen, setModeOpen] = useState(false)
+  const [mode, setMode] = useState<ResearchMode>(() => {
+    try {
+      const saved = localStorage.getItem('aurora-research-mode')
+      return saved === 'web' || saved === 'calls' ? saved : 'auto'
+    } catch {
+      return 'auto'
+    }
+  })
+  const pickMode = (next: ResearchMode) => {
+    setMode(next)
+    setModeOpen(false)
+    try {
+      localStorage.setItem('aurora-research-mode', next)
+    } catch {
+      // private mode: the choice just isn't remembered
+    }
+  }
   const scrollRef = useRef<HTMLDivElement>(null)
   const inputRef = useRef<HTMLInputElement>(null)
   const keyboardOpen = useKeyboardOpen()
@@ -707,7 +726,14 @@ export default function App() {
                   <PlusIcon />
                 </button>
                 <span className="spacer" />
-                <button type="button" className="tool" aria-label="Search preferences">
+                <button
+                  type="button"
+                  className={`tool${modeOpen ? ' active' : ''}`}
+                  aria-label="Research mode"
+                  aria-haspopup="menu"
+                  aria-expanded={modeOpen}
+                  onClick={() => setModeOpen((v) => !v)}
+                >
                   <SlidersIcon />
                 </button>
                 <button type="button" className="tool" aria-label="Dictate" onClick={dictation.start}>
@@ -719,6 +745,9 @@ export default function App() {
             )}
           </LiquidGlass>
         )}
+
+        {/* ---------- research mode dropdown ---------- */}
+        {!voice.active && <ModeMenu open={modeOpen} mode={mode} onPick={pickMode} onClose={() => setModeOpen(false)} />}
 
         {/* ---------- call sheet ---------- */}
         <CallSheet business={callFor} place={place} onClose={() => setCallFor(null)} />
