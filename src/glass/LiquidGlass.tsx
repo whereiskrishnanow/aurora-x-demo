@@ -84,8 +84,8 @@ export function LiquidGlass({
       onTilt(({ x, y }) => {
         const node = filterRef.current?.querySelector('feOffset')
         if (!node || reducedMotion.matches) return
-        node.setAttribute('dx', (x * 9).toFixed(2))
-        node.setAttribute('dy', (y * 9).toFixed(2))
+        node.setAttribute('dx', (x * 4).toFixed(2))
+        node.setAttribute('dy', (y * 4).toFixed(2))
       }),
     [],
   )

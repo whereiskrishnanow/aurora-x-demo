@@ -15,8 +15,8 @@
  */
 
 const REST = 315 // light from the top-left
-const SWING = 70 // max light swing either way, degrees
-const RANGE = 10 // degrees of tilt that count as a full -1..1
+const SWING = 45 // max light swing either way, degrees
+const RANGE = 16 // degrees of tilt that count as a full -1..1
 
 type Tilt = { x: number; y: number }
 type Listener = (tilt: Tilt) => void
@@ -34,7 +34,7 @@ const clamp = (v: number) => Math.max(-1, Math.min(1, v))
 
 function publish() {
   const root = document.documentElement.style
-  const angle = REST + current.x * SWING - current.y * 25
+  const angle = REST + current.x * SWING - current.y * 12
   root.setProperty('--lg-light', `${angle.toFixed(2)}deg`)
   root.setProperty('--lg-tx', current.x.toFixed(4))
   root.setProperty('--lg-ty', current.y.toFixed(4))
@@ -97,8 +97,8 @@ export function startLight() {
     if (!base) base = { gamma, beta }
     // The baseline drifts toward how the phone is being held.
     // Slow drift: a held tilt keeps showing for a few seconds before settling.
-    base.gamma += (gamma - base.gamma) * 0.006
-    base.beta += (beta - base.beta) * 0.006
+    base.gamma += (gamma - base.gamma) * 0.012
+    base.beta += (beta - base.beta) * 0.012
     aim((gamma - base.gamma) / RANGE, (beta - base.beta) / RANGE)
   }
   window.addEventListener('deviceorientation', onOrientation)

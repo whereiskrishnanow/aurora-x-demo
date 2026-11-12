@@ -55,7 +55,7 @@
   inset: 0;
   border-radius: inherit;
   pointer-events: none;
-  box-shadow: calc(var(--lg-tx) * -9px) calc(7px + var(--lg-ty) * -9px) 20px -5px rgba(0, 0, 0, 0.2);
+  box-shadow: calc(var(--lg-tx) * -3.5px) calc(6px + var(--lg-ty) * -3.5px) 18px -5px rgba(0, 0, 0, 0.16);
 }
 
 .lg-defs {
@@ -97,8 +97,8 @@
 /* A ring of a given width, cut with a two-layer mask. */
 .lg-light {
   /* The bright side of the rim slides round as the phone tilts. */
-  --lg-cx: calc(50% - var(--lg-tx) * 30%);
-  --lg-cy: calc(50% - var(--lg-ty) * 30%);
+  --lg-cx: calc(50% - var(--lg-tx) * 16%);
+  --lg-cy: calc(50% - var(--lg-ty) * 16%);
 }
 
 .lg-shade,
@@ -129,9 +129,9 @@
   background: conic-gradient(
     from var(--lg-light) at var(--lg-cx) var(--lg-cy),
     rgba(0, 0, 0, 0.01) 0deg,
-    rgba(0, 0, 0, 0.04) 70deg,
-    rgba(0, 0, 0, 0.13) 180deg,
-    rgba(0, 0, 0, 0.04) 290deg,
+    rgba(0, 0, 0, 0.03) 70deg,
+    rgba(0, 0, 0, 0.1) 180deg,
+    rgba(0, 0, 0, 0.03) 290deg,
     rgba(0, 0, 0, 0.01) 360deg
   );
   opacity: var(--lg-shade, 1);
@@ -174,17 +174,17 @@
   /* a glint that slides toward the light, plus a band sweeping across */
   background:
     radial-gradient(
-      circle at calc(50% - var(--lg-tx) * 45%) calc(35% - var(--lg-ty) * 45%),
-      rgba(255, 255, 255, 0.85) 0,
-      rgba(255, 255, 255, 0.3) 18%,
+      circle at calc(50% - var(--lg-tx) * 25%) calc(35% - var(--lg-ty) * 25%),
+      rgba(255, 255, 255, 0.5) 0,
+      rgba(255, 255, 255, 0.15) 18%,
       rgba(255, 255, 255, 0) 42%
     ),
     linear-gradient(
       112deg,
       rgba(255, 255, 255, 0) 32%,
-      rgba(255, 255, 255, 0.45) 45%,
-      rgba(255, 255, 255, 0.75) 50%,
-      rgba(255, 255, 255, 0.45) 55%,
+      rgba(255, 255, 255, 0.3) 45%,
+      rgba(255, 255, 255, 0.45) 50%,
+      rgba(255, 255, 255, 0.3) 55%,
       rgba(255, 255, 255, 0) 68%
     );
   background-size:
@@ -193,8 +193,8 @@
   background-repeat: no-repeat;
   background-position:
     0 0,
-    calc(50% + var(--lg-tx) * 90%) 0;
-  opacity: calc(var(--lg-spec) * (0.3 + (max(var(--lg-tx), -1 * var(--lg-tx)) + max(var(--lg-ty), -1 * var(--lg-ty))) * 0.7));
+    calc(50% + var(--lg-tx) * 55%) 0;
+  opacity: calc(var(--lg-spec) * (0.2 + (max(var(--lg-tx), -1 * var(--lg-tx)) + max(var(--lg-ty), -1 * var(--lg-ty))) * 0.4));
   mix-blend-mode: soft-light;
 }
 
@@ -211,7 +211,7 @@
 .lg-content {
   position: relative;
   /* Content floats inside the glass, so it shifts against the tilt. */
-  translate: calc(var(--lg-tx) * -4px) calc(var(--lg-ty) * -4px);
+  translate: calc(var(--lg-tx) * -1.5px) calc(var(--lg-ty) * -1.5px);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -237,7 +237,7 @@
 
 @media (prefers-reduced-motion: reduce) {
   .lg::before {
-    box-shadow: 0 7px 20px -5px rgba(0, 0, 0, 0.2);
+    box-shadow: 0 6px 18px -5px rgba(0, 0, 0, 0.16);
   }
   .lg-content {
     translate: none;
