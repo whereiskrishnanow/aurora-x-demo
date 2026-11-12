@@ -1,12 +1,14 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 
 /**
- * Dictation for the composer's microphone button.
+ * Dictation for the composer's microphone button, using the browser's speech
+ * recognition. Pausing stops it and freezes the timer; resuming carries on
+ * adding to the same text.
  *
- * Runs two things side by side: the browser's speech recognition, which
- * turns speech into text, and a microphone analyser, which measures loudness
- * for the waveform. Pausing stops both and freezes the timer; resuming
- * carries on adding to the same text.
+ * The microphone is used by speech recognition alone. Phones give the mic to
+ * one listener at a time, so a second feed for a level meter starved the
+ * recogniser of audio. The animation's energy comes from the recogniser's own
+ * signals instead: hearing sound, hearing speech, and new words.
  */
 
 export type DictationStatus = 'off' | 'recording' | 'paused'
@@ -22,6 +24,10 @@ interface Recognition {
   onresult: ((event: { results: ArrayLike<RecognitionResult> }) => void) | null
   onerror: ((event: { error: string }) => void) | null
   onend: (() => void) | null
+  onsoundstart?: (() => void) | null
+  onspeechstart?: (() => void) | null
+  onspeechend?: (() => void) | null
+  onsoundend?: (() => void) | null
   start: () => void
   abort: () => void
 }
@@ -41,10 +47,8 @@ export function useDictation() {
   const kept = useRef('')
   const session = useRef({ settled: '', partial: '' })
   const recognition = useRef<Recognition | null>(null)
-  /** loudness 0..1, read by the waveform every frame */
+  /** how lively the animation should be, 0..1: quiet, hearing sound, hearing speech */
   const level = useRef(0)
-  const audio = useRef<{ stream: MediaStream; context: AudioContext; analyser: AnalyserNode } | null>(null)
-  const meter = useRef(0)
   const clock = useRef({ startedAt: 0, banked: 0, timer: 0 })
 
   const publish = () => {
@@ -83,9 +87,24 @@ export function useDictation() {
       session.current = { settled, partial }
       publish()
     }
+    rec.onsoundstart = () => (level.current = Math.max(level.current, 0.45))
+    rec.onspeechstart = () => (level.current = 0.8)
+    rec.onspeechend = () => (level.current = 0.25)
+    rec.onsoundend = () => (level.current = 0.12)
     rec.onerror = (event) => {
-      if (event.error === 'not-allowed' || event.error === 'service-not-allowed') {
-        setError('Microphone access is blocked. Allow it in the browser to dictate.')
+      const messages: Record<string, string> = {
+        'not-allowed': 'Microphone access is blocked. Allow it for this site in your browser settings.',
+        'service-not-allowed': 'Speech-to-text is turned off on this device. On iPhone, turn on Dictation in Settings › General › Keyboard.',
+        'audio-capture': 'No microphone was found, or another app is using it.',
+        network: 'Couldn’t reach the speech service. Check your connection and try again.',
+      }
+      if (messages[event.error]) {
+        setError(messages[event.error])
+        // Nothing will come of retrying these: stop instead of looping.
+        statusRef.current = 'paused'
+        setStatus('paused')
+        clearInterval(clock.current.timer)
+        level.current = 0
       }
     }
     rec.onend = () => {
@@ -100,59 +119,9 @@ export function useDictation() {
     try {
       rec.start()
       recognition.current = rec
-    } catch {
-      // already running
-    }
-  }
-
-  const startMeter = async () => {
-    try {
-      if (!audio.current) {
-        const stream = await navigator.mediaDevices.getUserMedia({ audio: { echoCancellation: true, noiseSuppression: true } })
-        if (statusRef.current === 'off') {
-          stream.getTracks().forEach((t) => t.stop())
-          return
-        }
-        const context = new AudioContext()
-        const analyser = context.createAnalyser()
-        analyser.fftSize = 512
-        analyser.smoothingTimeConstant = 0.6
-        context.createMediaStreamSource(stream).connect(analyser)
-        audio.current = { stream, context, analyser }
-      } else {
-        await audio.current.context.resume()
-      }
-    } catch {
-      // No meter (permission or browser): the waveform falls back to speech activity.
-      return
-    }
-    const { analyser } = audio.current!
-    const samples = new Uint8Array(analyser.fftSize)
-    const read = () => {
-      analyser.getByteTimeDomainData(samples)
-      let sum = 0
-      for (const s of samples) sum += ((s - 128) / 128) ** 2
-      const rms = Math.sqrt(sum / samples.length)
-      // Speech sits around 0.02–0.2 RMS: stretch that into 0..1, fast attack, slower release.
-      const target = Math.min(1, Math.max(0, (rms - 0.01) * 6.5))
-      level.current += (target - level.current) * (target > level.current ? 0.6 : 0.18)
-      meter.current = requestAnimationFrame(read)
-    }
-    cancelAnimationFrame(meter.current)
-    meter.current = requestAnimationFrame(read)
-  }
-
-  const stopMeter = (release: boolean) => {
-    cancelAnimationFrame(meter.current)
-    level.current = 0
-    const a = audio.current
-    if (!a) return
-    if (release) {
-      a.stream.getTracks().forEach((t) => t.stop())
-      a.context.close().catch(() => undefined)
-      audio.current = null
-    } else {
-      a.context.suspend().catch(() => undefined)
+      level.current = Math.max(level.current, 0.18)
+    } catch (err) {
+      setError(`Couldn’t start the microphone: ${(err as Error).message || 'unknown error'}`)
     }
   }
 
@@ -178,7 +147,6 @@ export function useDictation() {
     setElapsed(0)
     setStatusBoth('recording')
     startRecognition()
-    startMeter()
     tickClock()
   }, []) // eslint-disable-line react-hooks/exhaustive-deps
 
@@ -195,15 +163,15 @@ export function useDictation() {
       rec.onend?.()
       stopRecognition()
     }
-    stopMeter(false)
+    level.current = 0
   }, []) // eslint-disable-line react-hooks/exhaustive-deps
 
   const resume = useCallback(() => {
     if (statusRef.current !== 'paused') return
+    setError('')
     setStatusBoth('recording')
     clock.current.startedAt = performance.now()
     startRecognition()
-    startMeter()
     tickClock()
   }, []) // eslint-disable-line react-hooks/exhaustive-deps
 
@@ -213,7 +181,7 @@ export function useDictation() {
     setStatusBoth('off')
     clearInterval(clock.current.timer)
     stopRecognition()
-    stopMeter(true)
+    level.current = 0
     kept.current = ''
     session.current = { settled: '', partial: '' }
     setText({ settled: '', partial: '' })
