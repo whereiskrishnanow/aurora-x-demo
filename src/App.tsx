@@ -50,7 +50,10 @@ const DEFAULT_PLACE = 'Indiranagar'
 /** Pull the area out of a brief like "2bhk house for rent in Indiranagar". */
 function parseBrief(text: string, fallback: string) {
   const match = text.match(/^(.*?)\s+(?:in|at|near)\s+([^,.]+?)\s*[.!]?$/i)
-  if (!match) return { title: text, place: fallback }
+  // "near metro", "near my office" describe a must-have, not an area.
+  if (!match || /^(?:the |a |my )?(?:metro|office|work|station|college|school|campus|me)\b/i.test(match[2])) {
+    return { title: text, place: fallback }
+  }
   const place = match[2].replace(/\b\w/g, (c) => c.toUpperCase())
   return { title: match[1], place }
 }
