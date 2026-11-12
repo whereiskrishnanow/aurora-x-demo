@@ -6,7 +6,7 @@ import { VoiceAurora } from './VoiceAurora'
 import { useVoiceMode } from './useVoiceMode'
 import brandRibbon from './assets/brand-ribbon.png'
 import { LISTINGS, RECENT_SEARCHES, nextId, seedConversation, type Message } from './chat'
-import { streamReply } from './ai'
+import { ChatError, streamReply } from './ai'
 import {
   CheckIcon,
   CloseIcon,
@@ -143,7 +143,11 @@ export default function App() {
     } catch (error) {
       if (controller.signal.aborted) return
       console.error(error)
-      finish([{ id, kind: 'assistant', text: 'I couldn’t reach the assistant just now. Please try again in a moment.' }])
+      const text =
+        error instanceof ChatError && error.limited
+          ? 'I’ve hit my usage limit for now, so I can’t reply. Please try again later.'
+          : 'I couldn’t reach the assistant just now. Please try again in a moment.'
+      finish([{ id, kind: 'assistant', text }])
     }
   }
 

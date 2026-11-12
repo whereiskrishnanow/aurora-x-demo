@@ -18,7 +18,7 @@ export const META_MARK = '@@META'
 
 const MODEL = process.env.GEMINI_MODEL || 'gemini-2.5-flash'
 /** Tried in order when the main model is overloaded or rate-limited. */
-const BACKUP_MODELS = ['gemini-2.5-flash-lite', 'gemini-flash-lite-latest']
+const BACKUP_MODELS = ['gemini-2.5-flash-lite', 'gemini-flash-lite-latest', 'gemini-flash-latest']
 
 /** The model writes "Rs 25K"; people see "₹25K". (Writing ₹ inside JSON trips some models up.) */
 const rupees = (text: string) => text.replace(/\b(?:Rs\.?|INR)\s?(?=\d)/g, '₹')
@@ -133,11 +133,18 @@ export async function handleChat(request: Request, apiKey: string | undefined): 
     if (upstream.ok && upstream.body) break
     const detail = await upstream.text().catch(() => '')
     console.error(`[api/chat] ${model} ${upstream.status}: ${detail.slice(0, 200)}`)
-    // Only busy/overloaded errors are worth retrying on another model.
-    if (upstream.status !== 429 && upstream.status < 500) break
+    // Each model has its own quota: on limits, overload or a model this key
+    // can't reach, try the next one. Bad requests or a bad key won't improve.
+    if ([400, 401, 403].includes(upstream.status)) break
   }
   if (!upstream || !upstream.ok || !upstream.body) {
-    return json(502, { error: `The AI service returned ${upstream?.status ?? 'nothing'}` })
+    const limited = upstream?.status === 429 || upstream?.status === 404
+    return json(limited ? 429 : 502, {
+      error: limited
+        ? 'The assistant has reached its usage limit for now. Please try again later.'
+        : `The AI service returned ${upstream?.status ?? 'nothing'}`,
+      code: limited ? 'limit' : 'upstream',
+    })
   }
 
   // Re-emit only the text parts of Gemini's server-sent events.

@@ -3,6 +3,16 @@ import type { Message } from './chat'
 /** Mirrors META_MARK in server/chat.ts. */
 const META_MARK = '@@META'
 
+export class ChatError extends Error {
+  constructor(
+    message: string,
+    /** the AI's usage limit was reached: worth telling the user plainly */
+    readonly limited = false,
+  ) {
+    super(message)
+  }
+}
+
 export interface ReplyMeta {
   chips: string[]
   title: string
@@ -55,7 +65,7 @@ export async function streamReply(
   })
   if (!response.ok || !response.body) {
     const detail = await response.json().catch(() => null)
-    throw new Error(detail?.error ?? `Chat failed (${response.status})`)
+    throw new ChatError(detail?.error ?? `Chat failed (${response.status})`, detail?.code === 'limit')
   }
 
   const reader = response.body.getReader()
