@@ -612,10 +612,8 @@ ul {
   bottom: var(--composer-bottom);
   height: var(--composer-height);
   box-shadow:
-    0 0 0 0.5px rgba(0, 0, 0, 0.05),
     0 0 30px 6px rgba(255, 255, 255, 0.8),
-    0 1px 2px rgba(0, 0, 0, 0.05),
-    0 8px 28px rgba(0, 0, 0, 0.07);
+    0 4px 14px rgba(0, 0, 0, 0.04);
 }
 
 .lg-content.composer-body {
@@ -687,9 +685,7 @@ ul {
   flex: none;
   color: var(--teal);
   box-shadow:
-    0 0 0 0.5px rgba(0, 0, 0, 0.08),
-    0 1px 2px rgba(0, 0, 0, 0.08),
-    0 4px 10px rgba(0, 0, 0, 0.08);
+    0 2px 6px rgba(0, 0, 0, 0.05);
   transition:
     color 0.25s ease,
     box-shadow 0.35s ease;
@@ -738,9 +734,7 @@ ul {
 .voice-send {
   color: #fff;
   box-shadow:
-    0 0 0 0.5px rgba(14, 148, 136, 0.4),
-    0 2px 6px rgba(14, 148, 136, 0.28),
-    0 6px 14px rgba(14, 148, 136, 0.2);
+    0 3px 8px rgba(14, 148, 136, 0.16);
 }
 
 .voice-send .voice-wave {
@@ -775,13 +769,11 @@ ul {
   0%,
   100% {
     box-shadow:
-      0 0 0 0.5px rgba(14, 148, 136, 0.35),
       0 0 0 0 rgba(14, 148, 136, 0.28),
       0 4px 10px rgba(14, 148, 136, 0.15);
   }
   50% {
     box-shadow:
-      0 0 0 0.5px rgba(14, 148, 136, 0.35),
       0 0 0 7px rgba(14, 148, 136, 0),
       0 4px 14px rgba(14, 148, 136, 0.25);
   }
@@ -829,8 +821,7 @@ ul {
   transform: none;
   visibility: visible;
   box-shadow:
-    0 1px 2px rgba(0, 0, 0, 0.08),
-    0 18px 60px rgba(0, 0, 0, 0.18);
+    0 10px 30px rgba(0, 0, 0, 0.1);
   transition:
     transform 0.5s cubic-bezier(0.22, 1.12, 0.36, 1),
     box-shadow 0.5s ease,
@@ -864,9 +855,7 @@ ul {
   letter-spacing: -0.01em;
   text-shadow: 0 1px 1px rgba(0, 70, 70, 0.25);
   box-shadow:
-    0 0 0 0.5px rgba(0, 110, 110, 0.35),
-    0 2px 6px rgba(0, 153, 153, 0.25),
-    0 10px 24px rgba(0, 153, 153, 0.22);
+    0 4px 12px rgba(0, 153, 153, 0.14);
 }
 
 .drawer-new .lg-content {
@@ -1044,9 +1033,7 @@ ul {
   height: 54px;
   color: #1b1b1b;
   box-shadow:
-    0 0 0 0.5px rgba(255, 255, 255, 0.6),
-    0 2px 6px rgba(20, 90, 95, 0.12),
-    0 10px 24px rgba(20, 90, 95, 0.14);
+    0 4px 12px rgba(20, 90, 95, 0.08);
 }
 
 .dock-button svg {
@@ -1196,9 +1183,7 @@ select {
   flex: none;
   color: #1b1b1b;
   box-shadow:
-    0 0 0 0.5px rgba(0, 0, 0, 0.1),
-    0 1px 2px rgba(0, 0, 0, 0.08),
-    0 4px 10px rgba(0, 0, 0, 0.07);
+    0 2px 6px rgba(0, 0, 0, 0.05);
 }
 
 .composer-tools .voice-send svg {
@@ -1268,9 +1253,7 @@ select {
   height: 10px;
   margin-top: 12px;
   box-shadow:
-    0 0 0 0.5px rgba(0, 0, 0, 0.08),
-    inset 0 1px 2px rgba(0, 0, 0, 0.05),
-    0 2px 6px rgba(0, 0, 0, 0.05);
+    inset 0 1px 2px rgba(0, 0, 0, 0.04);
 }
 
 .lg-content.live-bar-body {
@@ -1431,9 +1414,7 @@ select {
   font-size: 13px;
   font-weight: 600;
   box-shadow:
-    0 0 0 0.5px rgba(0, 0, 0, 0.1),
-    0 1px 2px rgba(0, 0, 0, 0.06),
-    0 3px 8px rgba(0, 0, 0, 0.06);
+    0 2px 5px rgba(0, 0, 0, 0.05);
 }
 
 .live-info {
@@ -1531,8 +1512,7 @@ select {
   transform: none;
   visibility: visible;
   box-shadow:
-    0 -1px 2px rgba(0, 0, 0, 0.06),
-    0 -18px 50px rgba(0, 0, 0, 0.16);
+    0 -8px 26px rgba(0, 0, 0, 0.09);
   transition:
     transform 0.45s cubic-bezier(0.22, 1.1, 0.36, 1),
     visibility 0s,
@@ -1604,8 +1584,7 @@ select {
   flex: none;
   color: #fff;
   box-shadow:
-    0 0 0 0.5px rgba(14, 148, 136, 0.4),
-    0 3px 10px rgba(14, 148, 136, 0.3);
+    0 2px 6px rgba(14, 148, 136, 0.18);
 }
 
 .player-play svg {
@@ -1690,8 +1669,7 @@ select {
   font-size: 14px;
   font-weight: 600;
   box-shadow:
-    0 0 0 0.5px rgba(0, 0, 0, 0.1),
-    0 2px 8px rgba(0, 0, 0, 0.07);
+    0 2px 5px rgba(0, 0, 0, 0.05);
 }
 
 .sheet-action .lg-content {
@@ -1710,9 +1688,7 @@ select {
   flex: none;
   color: #1b1b1b;
   box-shadow:
-    0 0 0 0.5px rgba(0, 0, 0, 0.1),
-    0 1px 2px rgba(0, 0, 0, 0.06),
-    0 3px 8px rgba(0, 0, 0, 0.07);
+    0 2px 5px rgba(0, 0, 0, 0.05);
 }
 
 .drawer-close svg {

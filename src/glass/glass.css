@@ -37,10 +37,8 @@
   /* No translate/transform at rest here: Chromium stops feeding the
      backdrop to a transformed root's glass. Tilt moves the inner layers. */
   box-shadow:
-    0 0 0 0.5px rgba(0, 0, 0, 0.07),
-    0 1px 1.5px rgba(0, 0, 0, 0.05),
-    0 6px 16px rgba(0, 0, 0, 0.07),
-    0 16px 36px rgba(0, 0, 0, 0.05);
+    0 1px 2px rgba(0, 0, 0, 0.03),
+    0 6px 16px rgba(0, 0, 0, 0.04);
 }
 
 /*
@@ -55,7 +53,7 @@
   inset: 0;
   border-radius: inherit;
   pointer-events: none;
-  box-shadow: calc(var(--lg-tx) * -3.5px) calc(6px + var(--lg-ty) * -3.5px) 18px -5px rgba(0, 0, 0, 0.16);
+  box-shadow: calc(var(--lg-tx) * -3.5px) calc(4px + var(--lg-ty) * -3.5px) 12px -5px rgba(0, 0, 0, 0.08);
 }
 
 .lg-defs {
@@ -237,7 +235,7 @@
 
 @media (prefers-reduced-motion: reduce) {
   .lg::before {
-    box-shadow: 0 6px 18px -5px rgba(0, 0, 0, 0.16);
+    box-shadow: 0 4px 12px -5px rgba(0, 0, 0, 0.08);
   }
   .lg-content {
     translate: none;
