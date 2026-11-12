@@ -192,6 +192,19 @@ ul {
   animation: rise 0.4s cubic-bezier(0.2, 0.8, 0.2, 1) both;
 }
 
+/* While the phone keyboard is open there's no room for the greeting: it steps aside. */
+.empty > * {
+  transition:
+    opacity 0.22s ease,
+    transform 0.32s cubic-bezier(0.2, 0.8, 0.2, 1);
+}
+
+.empty.keyboard-open > * {
+  opacity: 0;
+  transform: translateY(-10px) scale(0.97);
+  pointer-events: none;
+}
+
 .empty-mark {
   width: 58px;
   height: auto;

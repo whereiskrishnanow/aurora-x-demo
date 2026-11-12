@@ -4,6 +4,7 @@ import { StarterRows } from './StarterRows'
 import { VoiceButton } from './VoiceButton'
 import { VoiceAurora } from './VoiceAurora'
 import { useVoiceMode } from './useVoiceMode'
+import { useKeyboardOpen } from './useKeyboardOpen'
 import brandRibbon from './assets/brand-ribbon.png'
 import { LISTINGS, RECENT_SEARCHES, nextId, seedConversation, type Message } from './chat'
 import { ChatError, streamReply } from './ai'
@@ -86,6 +87,7 @@ export default function App() {
   const [menuOpen, setMenuOpen] = useState(false)
   const scrollRef = useRef<HTMLDivElement>(null)
   const inputRef = useRef<HTMLInputElement>(null)
+  const keyboardOpen = useKeyboardOpen()
   const aiRequest = useRef<AbortController | null>(null)
   const [busy, setBusy] = useState(false)
   const firstPaint = useRef(true)
@@ -273,7 +275,7 @@ export default function App() {
         {/* ---------- content layer: never glass ---------- */}
         <div className="scroll" ref={scrollRef}>
           {isEmpty && (
-            <div className="empty">
+            <div className={`empty${keyboardOpen ? ' keyboard-open' : ''}`} aria-hidden={keyboardOpen || undefined}>
               <img className="empty-mark" src={brandRibbon} alt="" width={58} height={41} />
               <h2>Find Anything</h2>
               <p>What can I do for you today?</p>
