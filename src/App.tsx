@@ -26,7 +26,9 @@ import {
 // bar; on a real phone the system draws its own. `?device` forces the frame.
 // A drawn iPhone status bar and notch, only on request with `?device`
 // (for screenshots). Everywhere else the screen starts right at the top.
-const simulatedDevice = new URLSearchParams(location.search).has('device')
+// Never on a real phone, even if the link carries ?device.
+const simulatedDevice =
+  new URLSearchParams(location.search).has('device') && window.matchMedia('(pointer: fine)').matches
 
 // The reference conversation is still available as a demo with `?demo`.
 const demo = new URLSearchParams(location.search).has('demo')

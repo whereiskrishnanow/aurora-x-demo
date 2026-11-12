@@ -70,7 +70,8 @@ ul {
   --composer-bottom: 33px;
 }
 
-@media (min-width: 520px) {
+/* Phone frame: desktop browsers only, never on a touch device (tablets, landscape phones). */
+@media (min-width: 520px) and (pointer: fine) {
   body {
     background: #dfe1e4;
   }
