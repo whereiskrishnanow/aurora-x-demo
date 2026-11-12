@@ -1786,17 +1786,19 @@ select {
 
 .mode-menu {
   position: absolute;
-  right: var(--gutter);
-  bottom: calc(var(--composer-bottom) + var(--composer-height) + 10px);
-  width: min(300px, calc(100% - 2 * var(--gutter)));
-  transform-origin: 85% 100%;
-  transform: translateY(8px) scale(0.92);
+  /* Just above the sliders icon, its right edge a little past the icon. */
+  right: calc(var(--gutter) + 60px);
+  bottom: calc(var(--composer-bottom) + 54px);
+  width: min(276px, calc(100% - 2 * var(--gutter) - 60px));
+  /* Grows out of the icon. */
+  transform-origin: calc(100% - 43px) 100%;
+  transform: translateY(6px) scale(0.94);
   visibility: hidden;
   box-shadow: none;
   transition:
-    transform 0.3s cubic-bezier(0.2, 1.2, 0.4, 1),
-    visibility 0s 0.3s,
-    box-shadow 0.3s ease;
+    transform 0.34s cubic-bezier(0.22, 1, 0.36, 1),
+    box-shadow 0.3s ease,
+    visibility 0s 0.34s;
 }
 
 .mode-menu.open {
@@ -1806,9 +1808,28 @@ select {
     0 0 0 0.5px rgba(0, 0, 0, 0.045),
     0 8px 26px rgba(0, 0, 0, 0.1);
   transition:
-    transform 0.32s cubic-bezier(0.2, 1.2, 0.4, 1),
-    visibility 0s,
-    box-shadow 0.3s ease;
+    transform 0.42s cubic-bezier(0.22, 1, 0.36, 1),
+    box-shadow 0.4s ease,
+    visibility 0s;
+}
+
+/* Fade the glass's layers rather than the glass itself (fading the root would
+   cut it off from what's behind it, and the refraction would disappear). */
+.mode-menu > * {
+  opacity: 0;
+  transition: opacity 0.2s ease;
+}
+
+.mode-menu.open > * {
+  opacity: 1;
+  transition: opacity 0.3s ease 0.02s;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .mode-menu,
+  .mode-menu.open {
+    transform: none;
+  }
 }
 
 .lg-content.mode-menu-body {
