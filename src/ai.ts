@@ -1,4 +1,4 @@
-import type { Message } from './chat'
+import type { Message, SearchResult } from './chat'
 
 /** Mirrors META_MARK in server/chat.ts. */
 const META_MARK = '@@META'
@@ -17,7 +17,8 @@ export interface ReplyMeta {
   chips: string[]
   title: string
   place: string
-  listings: boolean
+  /** brief for the calling agent, when the assistant starts a search */
+  search: string
 }
 
 /** What the model sees of the conversation. */
@@ -26,12 +27,23 @@ function toTurns(history: Message[]) {
     if (m.kind === 'user') return [{ role: 'user', text: m.text }]
     if (m.kind === 'assistant') return [{ role: 'assistant', text: m.text }]
     if (m.kind === 'question') return [{ role: 'assistant', text: m.question.text }]
-    return [{ role: 'assistant', text: '(The app showed the user a few sample homes that match.)' }]
+    if (m.kind === 'search') {
+      const r = m.result
+      return [
+        {
+          role: 'assistant',
+          text: r
+            ? `(Search done: ${r.summary} Options: ${r.results.map((x) => `${x.name} ${x.price}`).join('; ')}.)`
+            : '(A search was started.)',
+        },
+      ]
+    }
+    return [{ role: 'assistant', text: '(The app showed the user a few sample homes.)' }]
   })
 }
 
 function parseMeta(raw: string): ReplyMeta {
-  const fallback: ReplyMeta = { chips: [], title: '', place: '', listings: false }
+  const fallback: ReplyMeta = { chips: [], title: '', place: '', search: '' }
   const match = raw.match(/\{[\s\S]*\}/)
   if (!match) return fallback
   try {
@@ -40,7 +52,7 @@ function parseMeta(raw: string): ReplyMeta {
       chips: Array.isArray(data.chips) ? data.chips.map(String).filter(Boolean).slice(0, 5) : [],
       title: typeof data.title === 'string' ? data.title.trim() : '',
       place: typeof data.place === 'string' ? data.place.trim() : '',
-      listings: data.listings === true,
+      search: typeof data.search === 'string' ? data.search.trim() : '',
     }
   } catch {
     return fallback
@@ -90,4 +102,17 @@ export async function streamReply(
   const text = (cut === -1 ? raw : raw.slice(0, cut)).trim()
   const meta = cut === -1 ? parseMeta('') : parseMeta(raw.slice(cut + META_MARK.length))
   return { text, meta }
+}
+
+/** Run the (simulated) call-around search for a brief. */
+export async function runSearch(brief: string, signal: AbortSignal): Promise<SearchResult> {
+  const response = await fetch('/api/search', {
+    method: 'POST',
+    headers: { 'content-type': 'application/json' },
+    body: JSON.stringify({ brief }),
+    signal,
+  })
+  const body = await response.json().catch(() => null)
+  if (!response.ok || !body?.results) throw new Error(body?.error ?? 'The search couldn’t run right now.')
+  return body as SearchResult
 }

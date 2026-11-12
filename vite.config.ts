@@ -4,10 +4,12 @@ import basicSsl from '@vitejs/plugin-basic-ssl'
 import { Readable } from 'node:stream'
 import { handleChat } from './server/chat'
 import { handleTranscribe } from './server/transcribe'
+import { handleSearch } from './server/search'
 
 const ROUTES: Record<string, (request: Request, apiKey: string | undefined) => Promise<Response>> = {
   '/api/chat': handleChat,
   '/api/transcribe': handleTranscribe,
+  '/api/search': handleSearch,
 }
 
 /**

@@ -98,6 +98,7 @@ export async function handleTranscribe(request: Request, apiKey: string | undefi
         return
       }
       const controller = new AbortController()
+      setTimeout(() => controller.abort(), 30000) // never wait forever
       controllers.push(controller)
       running += 1
       clearTimeout(timer)

@@ -1204,3 +1204,169 @@ select {
 .composer-tools .voice-send svg {
   display: block;
 }
+
+/* ---------- live search card (simulated calling) ---------- */
+
+.live-search {
+  padding: 14px 14px 10px;
+  border: 1px solid #e6e6e6;
+  border-radius: 22px;
+  background: #fdfdfd;
+}
+
+.live-head {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 14px;
+}
+
+.live-head strong {
+  flex: 1;
+  font-weight: 600;
+}
+
+.live-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: #1d9e75;
+}
+
+.live-dot.on {
+  animation: live-pulse 1.1s ease-in-out infinite;
+}
+
+@keyframes live-pulse {
+  50% {
+    transform: scale(1.6);
+    opacity: 0.4;
+  }
+}
+
+.live-clock {
+  font-size: 13px;
+  color: var(--muted);
+  font-variant-numeric: tabular-nums;
+}
+
+.live-stats {
+  display: flex;
+  gap: 14px;
+  margin-top: 10px;
+  font-size: 13px;
+  color: var(--muted);
+}
+
+.live-stats b {
+  color: #111;
+  font-weight: 650;
+  font-variant-numeric: tabular-nums;
+}
+
+.live-bar {
+  height: 4px;
+  margin-top: 10px;
+  border-radius: 2px;
+  background: #eef1f0;
+  overflow: hidden;
+}
+
+.live-bar span {
+  display: block;
+  height: 100%;
+  border-radius: 2px;
+  background: linear-gradient(90deg, #14b8a6, #1d9e75, #38aae6);
+  transition: width 0.5s ease;
+}
+
+.live-error {
+  margin-top: 8px;
+  font-size: 13px;
+  color: #a14b3c;
+}
+
+/* Confirmed results: a swipeable row of cards. */
+.live-results {
+  display: flex;
+  gap: 8px;
+  margin: 12px -14px 0;
+  padding: 0 14px 2px;
+  overflow-x: auto;
+  scroll-snap-type: x mandatory;
+  scrollbar-width: none;
+}
+
+.live-results::-webkit-scrollbar {
+  display: none;
+}
+
+.live-card {
+  flex: none;
+  width: 78%;
+  padding: 12px;
+  border: 1px solid #e8ecea;
+  border-radius: 18px;
+  background: #fff;
+  scroll-snap-align: start;
+  animation: rise 0.35s cubic-bezier(0.2, 0.8, 0.2, 1) both;
+}
+
+.live-card-top {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+}
+
+.live-card h4 {
+  flex: 1;
+  font-size: 15px;
+  font-weight: 600;
+  line-height: 19px;
+}
+
+.live-badge {
+  flex: none;
+  padding: 2px 8px;
+  border-radius: 10px;
+  font-size: 11px;
+  font-weight: 600;
+  color: #0f7a5a;
+  background: #e3f4ee;
+}
+
+.live-meta,
+.live-detail {
+  margin-top: 3px;
+  font-size: 12.5px;
+  line-height: 17px;
+  color: var(--muted);
+}
+
+.live-price {
+  margin-top: 6px;
+  font-size: 17px;
+  font-weight: 650;
+}
+
+.live-quote {
+  margin-top: 8px;
+  padding-left: 9px;
+  border-left: 2px solid #b9dcd6;
+  font-size: 13px;
+  line-height: 18px;
+  color: #3c3c3c;
+}
+
+.live-called {
+  margin-top: 8px;
+  font-size: 12px;
+  font-weight: 600;
+  color: #1d9e75;
+}
+
+.live-note {
+  margin-top: 10px;
+  font-size: 11.5px;
+  color: #9a9a9a;
+}

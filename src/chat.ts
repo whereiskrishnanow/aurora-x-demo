@@ -4,6 +4,22 @@ export interface Question {
   options: string[]
 }
 
+export interface SearchResult {
+  found: number
+  called: number
+  summary: string
+  results: {
+    name: string
+    rating: number
+    reviews: number
+    distance: string
+    price: string
+    detail: string
+    quote: string
+    badge: string
+  }[]
+}
+
 export interface Listing {
   title: string
   area: string
@@ -17,6 +33,7 @@ export type Message =
   | { id: number; kind: 'assistant'; text: string }
   | { id: number; kind: 'question'; question: Question; answer?: string }
   | { id: number; kind: 'listings'; listings: Listing[] }
+  | { id: number; kind: 'search'; brief: string; result?: SearchResult; failed?: string }
 
 export const QUESTIONS: Question[] = [
   {

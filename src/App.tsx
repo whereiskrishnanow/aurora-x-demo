@@ -8,8 +8,9 @@ import { useKeyboardOpen } from './useKeyboardOpen'
 import { useDictation } from './useDictation'
 import { VoiceStrings } from './VoiceStrings'
 import brandRibbon from './assets/brand-ribbon.png'
-import { LISTINGS, RECENT_SEARCHES, nextId, seedConversation, type Message } from './chat'
-import { ChatError, streamReply } from './ai'
+import { RECENT_SEARCHES, nextId, seedConversation, type Message } from './chat'
+import { ChatError, runSearch, streamReply } from './ai'
+import { LiveSearch } from './LiveSearch'
 import {
   ArrowUpIcon,
   CheckIcon,
@@ -40,20 +41,20 @@ const demo = new URLSearchParams(location.search).has('demo')
 
 const STARTERS = [
   [
-    '2bhk house for rent in Indiranagar',
-    'Fully furnished 1bhk near metro',
-    'Pet friendly homes in Whitefield',
-    'Studio apartment under ₹15K',
-    '3bhk for a family in Jayanagar',
-    'Flatmates wanted in HSR Layout',
+    'Roses delivered by 5 PM today',
+    '2BHK for rent in Indiranagar',
+    'Plumber who can come today',
+    'Birthday cake for 20 by 7 PM',
+    'AC service this evening',
+    'Catering for 40 guests',
   ],
   [
-    'Partially equipped with essentials',
-    'Flats with covered parking',
-    'Gated society with a gym',
-    'Homes ready to move in this week',
-    'Walking distance to a tech park',
-    'Independent house with a terrace',
+    'Pharmacy with insulin in stock',
+    'Dentist appointment tomorrow',
+    'Car mechanic open on Sunday',
+    'Tailor to alter a suit by Friday',
+    'PG near Koramangala under ₹15K',
+    'Movers for a 1BHK this weekend',
   ],
 ]
 
@@ -103,6 +104,7 @@ export default function App() {
     el.classList.toggle('overflowing', el.scrollWidth > el.clientWidth + 1)
   }, [dictation.text])
   const aiRequest = useRef<AbortController | null>(null)
+  const searchRequest = useRef<AbortController | null>(null)
   const [busy, setBusy] = useState(false)
   const firstPaint = useRef(true)
   // Messages already on screen at launch appear in place; only new ones animate in.
@@ -194,8 +196,10 @@ export default function App() {
           : { id, kind: 'assistant', text: text || 'Sorry, I didn’t catch that. Could you say it another way?' }
       if (!text) spokenUpTo = 0
       const final: Message[] = [reply]
-      if (meta.listings) final.push({ id: nextId(), kind: 'listings', listings: LISTINGS })
+      const searchId = meta.search ? nextId() : 0
+      if (meta.search) final.push({ id: searchId, kind: 'search', brief: meta.search })
       finish(final)
+      if (meta.search) startSearch(searchId, meta.search)
     } catch (error) {
       if (controller.signal.aborted) return
       console.error(error)
@@ -208,6 +212,29 @@ export default function App() {
         streaming = false
       }
       finish([{ id, kind: 'assistant', text }])
+    }
+  }
+
+  /** Run the (simulated) call-around for a search card, then summarise it. */
+  const startSearch = async (id: number, brief: string) => {
+    searchRequest.current?.abort()
+    const controller = new AbortController()
+    searchRequest.current = controller
+    try {
+      const result = await runSearch(brief, controller.signal)
+      if (controller.signal.aborted) return
+      setMessages((all) => all.map((m) => (m.id === id && m.kind === 'search' ? { ...m, result } : m)))
+      // The summary follows once the result cards have slid in.
+      window.setTimeout(() => {
+        if (controller.signal.aborted) return
+        const summary: Message = { id: nextId(), kind: 'assistant', text: result.summary }
+        setMessages((all) => [...all, summary])
+        if (voice.isActive()) voice.speak([{ id: summary.id, text: result.summary }])
+      }, result.results.length * 450 + 400)
+    } catch (error) {
+      if (controller.signal.aborted) return
+      const failed = (error as Error).message || 'The search couldn’t run right now.'
+      setMessages((all) => all.map((m) => (m.id === id && m.kind === 'search' ? { ...m, failed } : m)))
     }
   }
 
@@ -269,6 +296,7 @@ export default function App() {
 
   const newChat = () => {
     aiRequest.current?.abort()
+    searchRequest.current?.abort()
     voice.exit()
     settled.current = new Set()
     setTyping(false)
@@ -345,6 +373,13 @@ export default function App() {
                         })}
                       </div>
                     )}
+                  </div>
+                )
+              }
+              if (m.kind === 'search') {
+                return (
+                  <div key={m.id} className={rowClass(m, 'search')}>
+                    <LiveSearch result={m.result} failed={m.failed} />
                   </div>
                 )
               }

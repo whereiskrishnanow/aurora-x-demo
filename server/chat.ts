@@ -35,22 +35,23 @@ const bench = (model: string, seconds: number) => benched.set(model, Date.now() 
 /** The model writes "Rs 25K"; people see "₹25K". (Writing ₹ inside JSON trips some models up.) */
 const rupees = (text: string) => text.replace(/\b(?:Rs\.?|INR)\s?(?=\d)/g, '₹')
 
-const SYSTEM = `You are the assistant inside "Find Anything", a mobile app that helps people find homes to rent in Bengaluru, India.
+const SYSTEM = `You are Aurora, an AI agent inside a mobile app. People ask you to find things in the physical, offline world (homes to rent, local services, same-day delivery, quotes, appointments, hard-to-find products) and you find them by calling real businesses in parallel and coming back with verified answers. The user is in Bengaluru, India.
 
-How to talk:
+Your job in this chat is to clarify the request, then start the search:
 - Warm, natural and brief: at most 2 short sentences per reply. Replies may be read aloud, so no markdown, lists, emoji or headings.
-- Ask exactly one question at a time to understand what they need: budget (monthly rent), furnishing, move-in timing, who will stay, and any must-haves (parking, pets, metro, gym...). Skip anything they already told you.
-- Use Indian conventions: write rupee amounts as Rs with K for thousands (Rs 25K; the app shows the ₹ sign), BHK, area names like Indiranagar, HSR Layout, Koramangala, Whitefield.
-- Once you know the area plus at least budget and furnishing, say you're showing a few example homes (live listings are being connected soon), then ask one refinement question. Never claim they are real matches.
-- If they ask something general about renting (deposits, agreements, neighbourhoods), answer helpfully and briefly, then steer back.
-- Never invent specific listings, addresses, landlord names or phone numbers.
+- Ask exactly one short clarifying question at a time, only about what changes who to call or what to ask them: area, budget, timing/deadline, quantity or size, key must-haves. Skip anything already said. Ask at most two questions in total; if the request is already clear, start the search straight away.
+- When you know enough, start the search: say in one sentence what you'll do (e.g. "On it, I'll call florists near Indiranagar and confirm who can deliver by 5 PM."), and fill "search".
+- After a search has run, the user may refine it ("under 30K", "open past 8", "closer to me"). Acknowledge it and start a new search with the updated brief.
+- If they ask a general question, answer briefly and helpfully, then offer to search.
+- Use Indian conventions: write rupee amounts as Rs with K for thousands (Rs 25K; the app shows the ₹ sign).
+- Never claim results before a search has run, and never invent business names, phone numbers or addresses in your reply.
 
 Respond as JSON with these fields:
 - reply: what you say to the user (the brief, speakable text described above).
-- chips: 2 to 5 tap-to-answer options for the question you just asked, each at most 4 words (e.g. "Less than Rs 15K", "Rs 15K - 25K", "Semi furnished", "Within a month"). Always include chips when your reply asks a question; use [] only if you asked nothing.
-- title: a short lowercase title for this search, e.g. "2bhk house for rent". Empty string if unknown.
-- place: the Bengaluru area they want, e.g. "HSR Layout". Empty string if unknown.
-- listings: true only in the reply where you say you're showing example homes.`
+- chips: 2 to 5 tap-to-answer options for the question you just asked, each at most 4 words (e.g. "Under Rs 30K", "Today by 6 PM", "Semi furnished"). Always include chips when your reply asks a question; [] when you start a search or ask nothing.
+- title: a short lowercase title for this request, e.g. "2bhk house for rent", "roses by 5 pm", "plumber today". Empty string if unknown.
+- place: the Bengaluru area it's about, e.g. "Indiranagar". Empty string if unknown.
+- search: when starting a search, a complete one-paragraph brief for the calling agent: what to find, where, every constraint (budget, deadline, quantity, must-haves) and what to confirm on each call. Otherwise an empty string.`
 
 const SCHEMA = {
   type: 'OBJECT',
@@ -59,11 +60,11 @@ const SCHEMA = {
     chips: { type: 'ARRAY', items: { type: 'STRING' } },
     title: { type: 'STRING' },
     place: { type: 'STRING' },
-    listings: { type: 'BOOLEAN' },
+    search: { type: 'STRING' },
   },
-  required: ['reply', 'chips', 'title', 'place', 'listings'],
+  required: ['reply', 'chips', 'title', 'place', 'search'],
   // reply first, so it can be streamed to the screen while the rest arrives
-  propertyOrdering: ['reply', 'chips', 'title', 'place', 'listings'],
+  propertyOrdering: ['reply', 'chips', 'title', 'place', 'search'],
 }
 
 /**
@@ -130,7 +131,7 @@ export async function handleChat(request: Request, apiKey: string | undefined): 
         contents: turns.map((t) => ({ role: t.role === 'assistant' ? 'model' : 'user', parts: [{ text: t.text }] })),
         generationConfig: {
           temperature: 0.6,
-          maxOutputTokens: 400,
+          maxOutputTokens: 700,
           // Replies are short and conversational: answer fast rather than think long.
           thinkingConfig: model.startsWith('gemini-2') ? { thinkingBudget: 0 } : { thinkingLevel: 'low' },
           responseMimeType: 'application/json',
@@ -250,6 +251,15 @@ export async function handleChat(request: Request, apiKey: string | undefined): 
       })
     }
     launch()
+    // Never wait forever on a model that stops answering.
+    setTimeout(() => {
+      if (settled) return
+      settled = true
+      clearTimeout(timer)
+      controllers.forEach((c) => c.abort())
+      lastStatus = 503
+      resolve(null)
+    }, 30000)
   })
   const body = winner?.body ?? null
 
@@ -296,7 +306,7 @@ export async function handleChat(request: Request, apiKey: string | undefined): 
         }
       },
       flush(controller) {
-        let data: { reply?: string; chips?: string[]; title?: string; place?: string; listings?: boolean } = {}
+        let data: { reply?: string; chips?: string[]; title?: string; place?: string; search?: string } = {}
         try {
           data = JSON.parse(raw)
         } catch {
@@ -309,7 +319,7 @@ export async function handleChat(request: Request, apiKey: string | undefined): 
         const chips = (Array.isArray(data.chips) ? data.chips : [])
           .map((chip) => rupees(String(chip)).trim())
           .filter((chip) => chip && chip.length <= 32)
-        const meta = { chips, title: data.title ?? '', place: data.place ?? '', listings: !!data.listings }
+        const meta = { chips, title: data.title ?? '', place: data.place ?? '', search: rupees(String(data.search ?? '')).trim() }
         controller.enqueue(encoder.encode(`\n${META_MARK}\n${JSON.stringify(meta)}`))
       },
     }),
